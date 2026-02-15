@@ -81,7 +81,7 @@ const Header = ({
     <header className="border-b border-border py-2 px-6">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src="/alien.png" alt="Keys&Fingers Logo" className="h-8 w-8 object-contain" />
+          <img src="alien.png" alt="Keys&Fingers Logo" className="h-8 w-8 object-contain" />
           <h1
             className="text-xl font-bold tracking-tight font-mono glitch-text"
             data-text="Keys&Fingers"
