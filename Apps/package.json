@@ -1,0 +1,55 @@
+{
+  "name": "keys-and-fingers",
+  "version": "1.0.0",
+  "description": "A glitch-themed typing speed test. Measure your WPM, accuracy, and improve your typing skills.",
+  "main": "main.js",
+  "author": "Ovi ren",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "electron-is-dev": "^2.0.0"
+  },
+  "devDependencies": {
+    "electron": "latest",
+    "electron-builder": "latest"
+  },
+  "build": {
+    "appId": "com.iamovi.keysandfingers",
+    "productName": "Keys&Fingers",
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "public/**/*",
+      "icon.ico",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        "portable"
+      ],
+      "icon": "icon.ico",
+      "forceCodeSigning": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Keys&Fingers",
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "installerHeaderIcon": "icon.ico",
+      "runAfterFinish": true
+    }
+  }
+}

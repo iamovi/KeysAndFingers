@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Offline</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f0f0f0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      }
+      .offline-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        padding: 40px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        max-width: 500px;
+        text-align: center;
+      }
+      .offline-icon {
+        font-size: 60px;
+        margin-bottom: 10px;
+        width: 100px;
+        height: 100px;
+      }
+      .offline-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+      }
+      .offline-text {
+        font-size: 16px;
+        color: #666;
+        line-height: 1.5;
+        margin-bottom: 20px;
+      }
+      .retry-btn {
+        padding: 12px 30px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+      .retry-btn:hover {
+        background: #5568d3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="offline-container">
+      <img src="./alien.png" alt="Offline" class="offline-icon" />
+      <div class="offline-title">You're Offline</div>
+      <div class="offline-text">
+        It looks like you don't have an internet connection. Please check your connection and try again.
+      </div>
+      <button class="retry-btn" onclick="retryConnection()">Try Again</button>
+    </div>
+  </body>
+  <script>
+    function retryConnection() {
+      if (window.electron && window.electron.retry) {
+        window.electron.retry();
+      }
+    }
+  </script>
+</html>

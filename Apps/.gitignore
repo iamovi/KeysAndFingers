@@ -1,0 +1,8 @@
+node_modules/
+dist/
+out/
+*.exe
+*.dmg
+*.zip
+.env.local
+.env.production.local
