@@ -17,7 +17,7 @@ export interface PlayerProgress {
     name?: string;
 }
 
-type MessageType = 'ping' | 'pong' | 'text' | 'progress' | 'finish' | 'restart-request' | 'restart-ack' | 'left' | 'ready';
+type MessageType = 'ping' | 'pong' | 'text' | 'progress' | 'finish' | 'restart-request' | 'restart-ack' | 'left' | 'ready' | 'reward';
 
 interface VSMessage {
     type: MessageType;
@@ -65,6 +65,7 @@ export interface UsePeerChallengeReturn {
     requestRematch: () => void;
     leaveRoom: () => void;
     setReady: () => void;
+    sendReward: (url: string) => void;
     setPlayerName: (name: string) => void;
     resetPlayerName: () => void;
     isReady: boolean;
@@ -72,6 +73,7 @@ export interface UsePeerChallengeReturn {
     challengeText: string | null;
     opponentName: string | null;
     playerName: string | null;
+    rewardUrl: string | null;
 }
 
 export const useVsChallenge = (): UsePeerChallengeReturn => {
@@ -87,6 +89,7 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
     const [challengeText, setChallengeText] = useState<string | null>(null);
     const [isReady, setIsReadyState] = useState(false);
     const [isOpponentReady, setIsOpponentReady] = useState(false);
+    const [rewardUrl, setRewardUrl] = useState<string | null>(null);
 
     const channelRef = useRef<RealtimeChannel | null>(null);
     const myId = useRef<string>(Math.random().toString(36).substring(7));
@@ -158,6 +161,7 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
         setOpponentName(null);
         setError(null);
         setChallengeText(null);
+        setRewardUrl(null);
     }, [cleanupAll]);
 
     const setPlayerName = useCallback((name: string) => {
@@ -192,8 +196,14 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
             if (Date.now() - lastPongRef.current > HEARTBEAT_TIMEOUT) {
                 if (opponentConnected) {
                     setOpponentConnected(false);
+                    setIsOpponentReady(false);
                     if (phaseRef.current !== 'idle' && phaseRef.current !== 'finished') {
                         setError('Opponent connection lost.');
+                        if (phaseRef.current === 'racing' || phaseRef.current === 'countdown') {
+                            if (countdownRef.current) clearInterval(countdownRef.current);
+                            countdownRef.current = null;
+                            setPhase('lobby');
+                        }
                     }
                 }
             }
@@ -250,10 +260,15 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
 
     // Check if both are ready to start countdown
     useEffect(() => {
-        if (isReady && isOpponentReady && phase === 'lobby' && challengeText) {
-            setTimeout(() => startCountdown(), 500);
+        if (isReady && isOpponentReady && phase === 'lobby' && challengeText && opponentConnected) {
+            const timer = setTimeout(() => {
+                if (phaseRef.current === 'lobby' && opponentConnected) {
+                    startCountdown();
+                }
+            }, 500);
+            return () => clearTimeout(timer);
         }
-    }, [isReady, isOpponentReady, phase, challengeText, startCountdown]);
+    }, [isReady, isOpponentReady, phase, challengeText, opponentConnected, startCountdown]);
 
     // ---- Setup Channel ----
     const setupChannel = useCallback((code: string, host: boolean) => {
@@ -331,11 +346,19 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
                         setIsOpponentReady(true);
                         break;
 
+                    case 'reward':
+                        setRewardUrl(payload.payload);
+                        break;
+
                     case 'left':
                         setOpponentConnected(false);
+                        setIsOpponentReady(false);
+                        setIsReadyState(false);
                         opponentId.current = null;
                         if (phaseRef.current !== 'idle') {
                             setError('Opponent has left the room.');
+                            if (countdownRef.current) clearInterval(countdownRef.current);
+                            countdownRef.current = null;
                             if (phaseRef.current === 'racing' || phaseRef.current === 'countdown') {
                                 setPhase('lobby');
                             }
@@ -433,6 +456,15 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
         });
     }, [opponentConnected]);
 
+    const sendReward = useCallback((url: string) => {
+        setRewardUrl(url);
+        channelRef.current?.send({
+            type: 'broadcast',
+            event: 'vs',
+            payload: { type: 'reward', payload: url, senderId: myId.current } as VSMessage
+        });
+    }, []);
+
     return {
         phase,
         roomCode,
@@ -448,6 +480,7 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
         requestRematch,
         leaveRoom,
         setReady,
+        sendReward,
         setPlayerName,
         resetPlayerName,
         isReady,
@@ -455,5 +488,6 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
         challengeText,
         opponentName,
         playerName,
+        rewardUrl,
     };
 };

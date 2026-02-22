@@ -42,6 +42,7 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         requestRematch,
         leaveRoom,
         setReady,
+        sendReward,
         setPlayerName,
         resetPlayerName,
         isReady,
@@ -49,13 +50,13 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         challengeText,
         opponentName,
         playerName,
+        rewardUrl,
     } = useVsChallenge();
 
     const [joinCode, setJoinCode] = useState('');
     const [copied, setCopied] = useState(false);
     const [myFinishData, setMyFinishData] = useState<PlayerProgress | null>(null);
     const [nameInput, setNameInput] = useState('');
-    const [rewardImg, setRewardImg] = useState<string | null>(null);
     const [loadingReward, setLoadingReward] = useState(false);
 
     // Use empty string when no text yet, swap in when text arrives
@@ -156,7 +157,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
 
     const handleRematch = useCallback(() => {
         setMyFinishData(null);
-        setRewardImg(null);
         reset();
         prevInputLen.current = 0;
         requestRematch();
@@ -169,27 +169,34 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         }
     };
 
-    // Fetch Reward when both are finished
+    // Fetch Reward when both are finished - ONLY WINNER FETCHES AND SENDS
     useEffect(() => {
-        const myData = myFinishData || (phase === 'finished' ? { finished: true } : null);
-        if (myData?.finished && opponentProgress.finished && !rewardImg && !loadingReward) {
-            const fetchReward = async () => {
-                setLoadingReward(true);
-                try {
-                    const res = await fetch('https://api.waifu.pics/sfw/waifu');
-                    const data = await res.json();
-                    if (data.url) {
-                        setRewardImg(data.url);
+        const myData = myFinishData || (phase === 'finished' ? { finished: true, wpm: stats.wpm } : null);
+        const oppData = opponentProgress;
+
+        if (myData?.finished && oppData.finished && !rewardUrl && !loadingReward) {
+            const iWon = (myData.wpm || 0) > (oppData.wpm || 0);
+
+            // Only the winner fetches and broadcasts the reward
+            if (iWon) {
+                const fetchReward = async () => {
+                    setLoadingReward(true);
+                    try {
+                        const res = await fetch('https://api.waifu.pics/sfw/waifu');
+                        const data = await res.json();
+                        if (data.url) {
+                            sendReward(data.url);
+                        }
+                    } catch (err) {
+                        console.error('Failed to fetch waifu reward:', err);
+                    } finally {
+                        setLoadingReward(false);
                     }
-                } catch (err) {
-                    console.error('Failed to fetch waifu reward:', err);
-                } finally {
-                    setLoadingReward(false);
-                }
-            };
-            fetchReward();
+                };
+                fetchReward();
+            }
         }
-    }, [myFinishData, opponentProgress.finished, rewardImg, loadingReward, phase]);
+    }, [myFinishData, opponentProgress.finished, rewardUrl, loadingReward, phase, sendReward]);
 
     // ===== NAME: Get username first =====
     if (!playerName) {
@@ -618,28 +625,28 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                 </div>
 
                 {/* Waifu Reward Section */}
-                {oppFinished && (iWon || !oppFinished) && (
+                {oppFinished && (
                     <div className="animate-in fade-in zoom-in slide-in-from-top-4 duration-700 delay-300">
                         <div className="p-1 rounded-xl bg-gradient-to-r from-amber-500 via-pink-500 to-red-500">
                             <div className="bg-card rounded-[10px] p-6 space-y-4 text-center">
                                 <div className="space-y-1">
-                                    <h3 className="text-lg font-bold font-mono text-foreground">
-                                        {iWon ? "WINNER'S REWARD" : "CONSOLATION PRIZE"}
+                                    <h3 className="text-lg font-bold font-mono text-foreground uppercase">
+                                        WINNER'S REWARD
                                     </h3>
                                     <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.2em]">
-                                        Here is a waifu for you
+                                        Here is a waifu for {iWon ? playerName : (opponentName || 'Opponent')}
                                     </p>
                                 </div>
 
                                 <div className="relative aspect-[4/5] sm:aspect-video w-full max-w-sm mx-auto rounded-lg overflow-hidden border border-border shadow-2xl bg-muted">
-                                    {loadingReward || !rewardImg ? (
+                                    {loadingReward || !rewardUrl ? (
                                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                                             <Loader2 className="h-8 w-8 text-primary animate-spin" />
                                             <span className="text-[10px] font-mono text-muted-foreground">SUMMONING WAIFU...</span>
                                         </div>
                                     ) : (
                                         <img
-                                            src={rewardImg}
+                                            src={rewardUrl}
                                             alt="Waifu Reward"
                                             className="w-full h-full object-contain sm:object-cover animate-in fade-in duration-1000"
                                         />
