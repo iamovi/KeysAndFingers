@@ -1,801 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Keys&Fingers - Documentation</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        :root {
-            --yellow: #FFD700;
-            --red: #FF3B3F;
-            --blue: #00A8FF;
-            --purple: #A463F2;
-            --green: #00D084;
-            --orange: #FF9500;
-            --pink: #FF006B;
-            --bg: #FFFEF9;
-            --text: #2C2C2C;
-            --border: #2C2C2C;
-        }
 
-        [data-theme="dark"] {
-            --bg: #1A1625;
-            --text: #FFFEF9;
-            --border: #FFFEF9;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: 'Comic Neue', cursive, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            transition: background-color 0.3s ease, color 0.3s ease;
-            position: relative;
-            overflow-x: hidden;
-        }
-
-        /* Comic book dots background */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                radial-gradient(circle, var(--text) 1px, transparent 1px);
-            background-size: 20px 20px;
-            opacity: 0.03;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        /* Particle Background */
-        #particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-
-        [data-theme="dark"] #particles {
-            opacity: 1;
-        }
-
-        /* Header */
-        header {
-            position: sticky;
-            top: 0;
-            background: var(--bg);
-            border-bottom: 4px solid var(--border);
-            z-index: 1000;
-            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
-        }
-
-        nav {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 1rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: relative;
-        }
-
-        .logo {
-            font-family: 'Bangers', cursive;
-            font-size: 1.5rem;
-            font-weight: 400;
-            color: var(--red);
-            text-shadow: 2px 2px 0 var(--yellow);
-            transform: rotate(-2deg);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            letter-spacing: 1px;
-        }
-
-        .logo-icon {
-            width: 35px;
-            height: 35px;
-            object-fit: contain;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 2rem;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            list-style: none;
-            align-items: center;
-        }
-
-        .nav-links a {
-            color: var(--text);
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 1rem;
-            transition: all 0.2s ease;
-            position: relative;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .nav-links a:hover {
-            transform: rotate(-2deg) scale(1.1);
-            color: var(--red);
-        }
-
-        /* GitHub Button */
-        .github-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: var(--text);
-            color: var(--bg);
-            padding: 0.6rem 1.2rem;
-            border: 3px solid var(--border);
-            border-radius: 0;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s ease;
-            box-shadow: 3px 3px 0 var(--border);
-        }
-
-        .github-btn:hover {
-            transform: rotate(-2deg) scale(1.05);
-            background: var(--purple);
-            color: white;
-        }
-
-        .github-btn i {
-            font-size: 1.2rem;
-        }
-
-        /* Theme Toggle */
-        .theme-toggle {
-            background: var(--yellow);
-            border: 3px solid var(--border);
-            border-radius: 0;
-            width: 45px;
-            height: 45px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            font-size: 1.2rem;
-            box-shadow: 3px 3px 0 var(--border);
-            position: relative;
-        }
-
-        .theme-toggle:hover {
-            transform: rotate(15deg) scale(1.1);
-            background: var(--orange);
-        }
-
-        .theme-toggle:active {
-            transform: rotate(15deg) scale(0.95);
-            box-shadow: 1px 1px 0 var(--border);
-        }
-
-        .mobile-menu-toggle {
-            display: none;
-            background: var(--blue);
-            border: 3px solid var(--border);
-            border-radius: 0;
-            padding: 0.5rem 1rem;
-            font-size: 1.2rem;
-            cursor: pointer;
-            color: white;
-            box-shadow: 3px 3px 0 var(--border);
-        }
-
-        /* Container */
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Hero */
-        .hero {
-            padding: 6rem 0 4rem;
-            text-align: center;
-            position: relative;
-        }
-
-        .pow-badge {
-            display: inline-block;
-            background: var(--red);
-            color: white;
-            padding: 0.5rem 1.5rem;
-            border: 3px solid var(--border);
-            border-radius: 0;
-            font-family: 'Bangers', cursive;
-            font-size: 1rem;
-            letter-spacing: 2px;
-            transform: rotate(-3deg);
-            box-shadow: 4px 4px 0 var(--border);
-            margin-bottom: 2rem;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: rotate(-3deg) translateY(0); }
-            50% { transform: rotate(-3deg) translateY(-10px); }
-        }
-
-        .hero-title {
-            font-family: 'Bangers', cursive;
-            font-size: 6rem;
-            font-weight: 400;
-            line-height: 1;
-            margin-bottom: 1rem;
-            color: var(--text);
-            text-shadow: 
-                4px 4px 0 var(--yellow),
-                8px 8px 0 var(--red);
-            transform: rotate(-2deg);
-            letter-spacing: 4px;
-        }
-
-        .hero-subtitle {
-            font-family: 'Bangers', cursive;
-            font-size: 2rem;
-            color: var(--blue);
-            margin-bottom: 1rem;
-            transform: rotate(1deg);
-            letter-spacing: 2px;
-        }
-
-        .hero-description {
-            font-size: 1.25rem;
-            color: var(--text);
-            margin-bottom: 3rem;
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
-            font-weight: 700;
-        }
-
-        .hero-preview {
-            margin: 3rem auto;
-            max-width: 900px;
-            padding: 0 1rem;
-        }
-
-        .preview-image {
-            width: 100%;
-            height: auto;
-            border: 4px solid var(--border);
-            border-radius: 0;
-            box-shadow: 8px 8px 0 var(--border);
-            transition: all 0.3s ease;
-        }
-
-        .preview-image:hover {
-            transform: scale(1.02);
-            box-shadow: 12px 12px 0 var(--border);
-        }
-
-        .hero-buttons {
-            display: flex;
-            gap: 1.5rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 1rem 2.5rem;
-            border: 4px solid var(--border);
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 1.1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s ease;
-            position: relative;
-            font-family: 'Bangers', cursive;
-        }
-
-        .btn-primary {
-            background: var(--red);
-            color: white;
-            box-shadow: 6px 6px 0 var(--border);
-            transform: rotate(-2deg);
-        }
-
-        .btn-primary:hover {
-            transform: rotate(-2deg) scale(1.05);
-            background: var(--pink);
-        }
-
-        .btn-primary:active {
-            transform: rotate(-2deg) scale(0.95);
-            box-shadow: 2px 2px 0 var(--border);
-        }
-
-        .btn-secondary {
-            background: var(--yellow);
-            color: var(--text);
-            box-shadow: 6px 6px 0 var(--border);
-            transform: rotate(2deg);
-        }
-
-        .btn-secondary:hover {
-            transform: rotate(2deg) scale(1.05);
-            background: var(--orange);
-        }
-
-        .btn-secondary:active {
-            transform: rotate(2deg) scale(0.95);
-            box-shadow: 2px 2px 0 var(--border);
-        }
-
-        /* Speech Bubble */
-        .speech-bubble {
-            background: white;
-            border: 3px solid var(--border);
-            border-radius: 0;
-            padding: 1.5rem;
-            position: relative;
-            box-shadow: 4px 4px 0 var(--border);
-            margin: 3rem 0;
-        }
-
-        .speech-bubble::before {
-            content: '';
-            position: absolute;
-            bottom: -20px;
-            left: 50px;
-            width: 0;
-            height: 0;
-            border-left: 20px solid transparent;
-            border-right: 20px solid transparent;
-            border-top: 20px solid var(--border);
-        }
-
-        .speech-bubble::after {
-            content: '';
-            position: absolute;
-            bottom: -14px;
-            left: 53px;
-            width: 0;
-            height: 0;
-            border-left: 17px solid transparent;
-            border-right: 17px solid transparent;
-            border-top: 17px solid white;
-        }
-
-        [data-theme="dark"] .speech-bubble {
-            background: var(--bg);
-        }
-
-        [data-theme="dark"] .speech-bubble::after {
-            border-top-color: var(--bg);
-        }
-
-        /* Section */
-        section {
-            padding: 5rem 0;
-            position: relative;
-        }
-
-        .section-title {
-            font-family: 'Bangers', cursive;
-            font-size: 4rem;
-            font-weight: 400;
-            text-align: center;
-            margin-bottom: 1rem;
-            color: var(--text);
-            text-shadow: 3px 3px 0 var(--blue);
-            transform: rotate(-1deg);
-            letter-spacing: 3px;
-        }
-
-        .section-subtitle {
-            text-align: center;
-            font-size: 1.2rem;
-            color: var(--text);
-            margin-bottom: 3rem;
-            font-weight: 700;
-        }
-
-        /* Feature Grid */
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 2rem;
-            margin-top: 3rem;
-        }
-
-        .feature-card {
-            background: var(--bg);
-            border: 4px solid var(--border);
-            padding: 2.5rem;
-            transition: all 0.3s ease;
-            position: relative;
-            box-shadow: 6px 6px 0 var(--border);
-        }
-
-        .feature-card:nth-child(1) { transform: rotate(-1deg); }
-        .feature-card:nth-child(2) { transform: rotate(1deg); }
-        .feature-card:nth-child(3) { transform: rotate(-1deg); }
-        .feature-card:nth-child(4) { transform: rotate(1deg); }
-        .feature-card:nth-child(5) { transform: rotate(-1deg); }
-        .feature-card:nth-child(6) { transform: rotate(1deg); }
-
-        .feature-card:hover {
-            transform: rotate(0deg) scale(1.05);
-            box-shadow: 8px 8px 0 var(--border);
-        }
-
-        .feature-icon {
-            width: 70px;
-            height: 70px;
-            border: 4px solid var(--border);
-            border-radius: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 4px 4px 0 var(--border);
-        }
-
-        .feature-card:nth-child(1) .feature-icon { background: var(--red); }
-        .feature-card:nth-child(2) .feature-icon { background: var(--blue); }
-        .feature-card:nth-child(3) .feature-icon { background: var(--purple); }
-        .feature-card:nth-child(4) .feature-icon { background: var(--green); }
-        .feature-card:nth-child(5) .feature-icon { background: var(--orange); }
-        .feature-card:nth-child(6) .feature-icon { background: var(--pink); }
-
-        .feature-title {
-            font-family: 'Bangers', cursive;
-            font-size: 1.75rem;
-            font-weight: 400;
-            margin-bottom: 1rem;
-            color: var(--text);
-            letter-spacing: 1px;
-        }
-
-        .feature-description {
-            color: var(--text);
-            line-height: 1.6;
-            font-weight: 700;
-        }
-
-        /* Code Block */
-        pre {
-            background: var(--text);
-            color: var(--yellow);
-            border: 4px solid var(--border);
-            padding: 1.5rem;
-            overflow-x: auto;
-            margin: 1.5rem 0;
-            font-size: 0.95rem;
-            font-family: 'Courier New', monospace;
-            box-shadow: 4px 4px 0 var(--border);
-            transform: rotate(-1deg);
-        }
-
-        [data-theme="dark"] pre {
-            background: var(--bg);
-            color: var(--yellow);
-            border-color: var(--yellow);
-        }
-
-        /* Steps */
-        .step {
-            background: var(--bg);
-            border: 4px solid var(--border);
-            padding: 2rem;
-            margin: 2rem 0;
-            transition: all 0.3s ease;
-            position: relative;
-            box-shadow: 6px 6px 0 var(--border);
-        }
-
-        .step:nth-child(odd) { transform: rotate(-1deg); }
-        .step:nth-child(even) { transform: rotate(1deg); }
-
-        .step:hover {
-            transform: rotate(0deg) scale(1.02);
-        }
-
-        .step-number {
-            position: absolute;
-            top: -20px;
-            left: 20px;
-            background: var(--yellow);
-            color: var(--text);
-            padding: 0.5rem 1rem;
-            border: 3px solid var(--border);
-            border-radius: 0;
-            font-weight: 700;
-            font-size: 1.2rem;
-            font-family: 'Bangers', cursive;
-            box-shadow: 3px 3px 0 var(--border);
-        }
-
-        .step-title {
-            font-family: 'Bangers', cursive;
-            font-size: 1.75rem;
-            font-weight: 400;
-            margin-bottom: 1rem;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            letter-spacing: 1px;
-        }
-
-        /* Comic Action Words */
-        .action-word {
-            font-family: 'Bangers', cursive;
-            font-size: 3rem;
-            color: var(--red);
-            text-shadow: 2px 2px 0 var(--yellow);
-            display: inline-block;
-            transform: rotate(-5deg);
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: rotate(-5deg) scale(1); }
-            50% { transform: rotate(-5deg) scale(1.1); }
-        }
-
-        /* Footer */
-        footer {
-            border-top: 4px solid var(--border);
-            padding: 3rem 0;
-            margin-top: 5rem;
-            text-align: center;
-            background: var(--bg);
-            box-shadow: 0 -4px 0 var(--border);
-        }
-
-        .footer-content {
-            color: var(--text);
-            font-weight: 700;
-        }
-
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .footer-links a {
-            color: white;
-            text-decoration: none;
-            font-weight: 700;
-            transition: all 0.2s ease;
-            background: var(--blue);
-            padding: 0.75rem 1.5rem;
-            border: 3px solid var(--border);
-            border-radius: 0;
-            box-shadow: 3px 3px 0 var(--border);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .footer-links a:hover {
-            transform: rotate(-2deg) scale(1.05);
-            background: var(--purple);
-        }
-
-        /* Responsive */
-        @media (max-width: 968px) {
-            .nav-right {
-                gap: 1rem;
-            }
-
-            .github-text {
-                display: none;
-            }
-
-            .github-btn {
-                padding: 0.6rem;
-                min-width: 45px;
-                justify-content: center;
-            }
-
-            .nav-links {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                background: var(--bg);
-                border-bottom: 4px solid var(--border);
-                padding: 2rem;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1.5rem;
-                box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
-            }
-
-            .nav-links.active {
-                display: flex;
-            }
-
-            .mobile-menu-toggle {
-                display: block;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .hero {
-                padding: 4rem 0 3rem;
-            }
-
-            .hero-title {
-                font-size: 4rem;
-                text-shadow: 
-                    3px 3px 0 var(--yellow),
-                    6px 6px 0 var(--red);
-            }
-
-            .hero-subtitle {
-                font-size: 1.5rem;
-            }
-
-            .section-title {
-                font-size: 3rem;
-            }
-
-            .feature-grid {
-                grid-template-columns: 1fr;
-            }
-
-            section {
-                padding: 3rem 0;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 0 1.25rem;
-            }
-
-            nav {
-                padding: 0.75rem 1rem;
-            }
-
-            .logo {
-                font-size: 1.3rem;
-                letter-spacing: 0.5px;
-            }
-
-            .logo-icon {
-                width: 28px;
-                height: 28px;
-            }
-
-            .theme-toggle {
-                width: 40px;
-                height: 40px;
-                font-size: 1rem;
-            }
-
-            .mobile-menu-toggle {
-                padding: 0.4rem 0.8rem;
-                font-size: 1.1rem;
-            }
-
-            .hero-title {
-                font-size: 3rem;
-            }
-
-            .hero-subtitle {
-                font-size: 1.25rem;
-            }
-
-            .hero-buttons {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .hero-preview {
-                margin: 2rem auto;
-            }
-
-            .preview-image {
-                border-width: 3px;
-                box-shadow: 4px 4px 0 var(--border);
-            }
-
-            .section-title {
-                font-size: 2.5rem;
-            }
-        }
-
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px) rotate(-2deg);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) rotate(-2deg);
-            }
-        }
-
-        .fade-in {
-            animation: fadeInUp 0.6s ease-out forwards;
-            opacity: 0;
-        }
-
-        .fade-in:nth-child(1) { animation-delay: 0.1s; }
-        .fade-in:nth-child(2) { animation-delay: 0.2s; }
-        .fade-in:nth-child(3) { animation-delay: 0.3s; }
-        .fade-in:nth-child(4) { animation-delay: 0.4s; }
-        .fade-in:nth-child(5) { animation-delay: 0.5s; }
-        .fade-in:nth-child(6) { animation-delay: 0.6s; }
-    </style>
+    <link rel="stylesheet" href="./style.css">
 </head>
+
 <body>
     <canvas id="particles"></canvas>
-    
+
     <header>
         <nav>
             <div class="logo">
-                <img src="https://raw.githubusercontent.com/iamovi/KeysAndFingers/main/.github/alien.png" alt="Alien Logo" class="logo-icon">
+                <img src="https://raw.githubusercontent.com/iamovi/KeysAndFingers/main/.github/alien.png"
+                    alt="Alien Logo" class="logo-icon">
                 KEYS&FINGERS
             </div>
             <div class="nav-right">
                 <ul class="nav-links" id="navLinks">
                     <li><a href="#features">Features</a></li>
                     <li><a href="#download">Download</a></li>
-                    <li><a href="#installation">Local</a></li>
                     <li><a href="#usage">Usage</a></li>
+                    <li><a href="#vsmode">VS Mode</a></li>
                     <li><a href="#contributing">Contribute</a></li>
                 </ul>
-                <a href="https://github.com/iamovi/KeysAndFingers" class="github-btn" target="_blank" rel="noopener noreferrer">
+                <a href="https://github.com/iamovi/KeysAndFingers" class="github-btn" target="_blank"
+                    rel="noopener noreferrer">
                     <i class="fab fa-github"></i>
                     <span class="github-text">GitHub</span>
                 </a>
@@ -814,16 +52,20 @@
         <section class="hero">
             <h1 class="hero-title">KEYS&FINGERS</h1>
             <p class="hero-subtitle">SMASH YOUR TYPING LIMITS!</p>
-            <p class="hero-description">The most EPIC typing speed test you'll ever use! Track your WPM, boost your accuracy, and become a TYPING SUPERHERO! 🦸‍♂️</p>
-            
+            <p class="hero-description">The most EPIC typing speed test you'll ever use! Now with <strong>Manual Intro
+                    Controls</strong>, <strong>Skeleton Loaders</strong>, and <strong>Enhanced Theme Syncing!</strong>
+                🦸‍♂️</p>
+
             <div class="hero-preview">
-                <img src="https://raw.githubusercontent.com/iamovi/KeysAndFingers/main/.github/preview.gif" alt="Keys&Fingers Preview" class="preview-image">
+                <img src="https://raw.githubusercontent.com/iamovi/KeysAndFingers/main/.github/preview.gif"
+                    alt="Keys&Fingers Preview" class="preview-image">
             </div>
 
             <div class="hero-preview">
-                <img src="https://c.tenor.com/Lis7v1qc07kAAAAC/tenor.gif" alt="Typing Animation" class="preview-image">
+                <img src="https://c.tenor.com/Lis7v1qc07kAAAAC/tenor.gif" alt="Typing Animation"
+                    class="preview-image hero-gif">
             </div>
-            
+
             <div class="hero-buttons">
                 <a href="https://iamovi.github.io/KeysAndFingers/" class="btn btn-primary">
                     <i class="fas fa-rocket"></i>
@@ -838,7 +80,8 @@
 
         <div class="speech-bubble">
             <p style="font-size: 1.2rem; font-weight: 700; text-align: center; margin: 0;">
-                "With Keys&Fingers, I went from 40 WPM to 120 WPM in just 3 months! It's like having a typing coach in your pocket!" 💪
+                "With Keys&Fingers, I went from 40 WPM to 120 WPM in just 3 months! It's like having a typing coach in
+                your pocket!" 💪
             </p>
         </div>
 
@@ -848,10 +91,38 @@
             <div class="feature-grid">
                 <div class="feature-card fade-in">
                     <div class="feature-icon">
+                        <i class="fas fa-crosshairs"></i>
+                    </div>
+                    <h3 class="feature-title">VS BATTLE MODE</h3>
+                    <p class="feature-description">Challenge friends in REAL-TIME! Use room codes to sync races and see
+                        every keystroke your opponent makes! ⚔️</p>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <h3 class="feature-title">THEME STUDIO</h3>
+                    <p class="feature-description">Full-screen customization! Pick fonts, colors, and effects. Your
+                        settings save automatically! 🎨</p>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
+                        <i class="fas fa-image"></i>
+                    </div>
+                    <h3 class="feature-title">WAIFU SPOILS</h3>
+                    <p class="feature-description">VICTORY brings rewards! Winners unlock high-quality waifu art with
+                        smooth skeleton loading! 🎁</p>
+                </div>
+
+                <div class="feature-card fade-in">
+                    <div class="feature-icon">
                         <i class="fas fa-bolt"></i>
                     </div>
                     <h3 class="feature-title">Lightning Fast</h3>
-                    <p class="feature-description">Real-time WPM tracking that updates INSTANTLY as you type! No lag, no delays, just pure speed! ⚡</p>
+                    <p class="feature-description">Real-time WPM tracking that updates INSTANTLY as you type! No lag, no
+                        delays, just pure speed! ⚡</p>
                 </div>
 
                 <div class="feature-card fade-in">
@@ -859,7 +130,8 @@
                         <i class="fas fa-bullseye"></i>
                     </div>
                     <h3 class="feature-title">Bull's Eye Accuracy</h3>
-                    <p class="feature-description">Track every keystroke with PINPOINT precision! Know exactly where you need to improve! 🎯</p>
+                    <p class="feature-description">Track every keystroke with PINPOINT precision! Know exactly where you
+                        need to improve! 🎯</p>
                 </div>
 
                 <div class="feature-card fade-in">
@@ -867,7 +139,8 @@
                         <i class="fas fa-paint-brush"></i>
                     </div>
                     <h3 class="feature-title">Comic Book Style</h3>
-                    <p class="feature-description">Practice typing with style! Our AWESOME interface makes learning FUN! 💥</p>
+                    <p class="feature-description">Practice typing with style! Our AWESOME interface makes learning FUN!
+                        💥</p>
                 </div>
 
                 <div class="feature-card fade-in">
@@ -875,7 +148,8 @@
                         <i class="fas fa-code"></i>
                     </div>
                     <h3 class="feature-title">Modern Tech</h3>
-                    <p class="feature-description">Built with React, TypeScript, and Vite! BLAZING fast and super smooth! 🚀</p>
+                    <p class="feature-description">Built with React, TypeScript, and Vite! BLAZING fast and super
+                        smooth! 🚀</p>
                 </div>
 
                 <div class="feature-card fade-in">
@@ -883,7 +157,8 @@
                         <i class="fas fa-feather-alt"></i>
                     </div>
                     <h3 class="feature-title">Lightweight</h3>
-                    <p class="feature-description">No bloat! No unnecessary stuff! Just pure TYPING POWER in a tiny package! 🎈</p>
+                    <p class="feature-description">No bloat! No unnecessary stuff! Just pure TYPING POWER in a tiny
+                        package! 🎈</p>
                 </div>
 
                 <div class="feature-card fade-in">
@@ -891,7 +166,8 @@
                         <i class="fas fa-heart"></i>
                     </div>
                     <h3 class="feature-title">100% Free</h3>
-                    <p class="feature-description">Completely FREE and open source! No hidden costs, no subscriptions! BOOM! 💰</p>
+                    <p class="feature-description">Completely FREE and open source! No hidden costs, no subscriptions!
+                        BOOM! 💰</p>
                 </div>
             </div>
         </section>
@@ -899,25 +175,28 @@
         <section id="download">
             <h2 class="section-title">DOWNLOAD THE APP!</h2>
             <p class="section-subtitle">Get Keys&Fingers on your desktop! BOOM! 💥</p>
-            
+
             <div style="text-align: center; margin-top: 3rem;">
                 <p class="action-word">ZAP!</p>
                 <p style="font-size: 1.3rem; font-weight: 700; margin: 2rem 0;">
                     Download the Windows Desktop App and start typing like a PRO! 🚀
                 </p>
-                
+
                 <div class="hero-preview" style="margin: 2rem auto 3rem;">
-                    <img src="https://raw.githubusercontent.com/iamovi/KeysAndFingers/main/Apps/app_preview.png" alt="Keys&Fingers App Preview" class="preview-image">
+                    <img src="https://raw.githubusercontent.com/iamovi/KeysAndFingers/main/Apps/app_preview.png"
+                        alt="Keys&Fingers App Preview" class="preview-image">
                 </div>
-                
+
                 <div class="feature-grid" style="max-width: 600px; margin: 0 auto;">
                     <div class="feature-card">
                         <div class="feature-icon" style="background: var(--blue);">
                             <i class="fab fa-windows"></i>
                         </div>
                         <h3 class="feature-title">WINDOWS APP</h3>
-                        <p class="feature-description">Download the official Keys&Fingers desktop application for Windows!</p>
-                        <a href="https://github.com/iamovi/KeysAndFingers/releases/download/v1.0.0/KeysAndFingersSetup.exe" class="btn btn-primary" style="margin-top: 1.5rem; display: inline-flex;" download>
+                        <p class="feature-description">Download the official Keys&Fingers desktop application for
+                            Windows!</p>
+                        <a href="https://github.com/iamovi/KeysAndFingers/releases/download/v1.0.0/KeysAndFingersSetup.exe"
+                            class="btn btn-primary" style="margin-top: 1.5rem; display: inline-flex;" download>
                             <i class="fas fa-download"></i>
                             DOWNLOAD NOW!
                         </a>
@@ -932,54 +211,6 @@
             </div>
         </section>
 
-        <section id="installation">
-            <h2 class="section-title">RUN LOCALLY!</h2>
-            <p class="section-subtitle">Follow these SUPER SIMPLE steps to install Keys&Fingers!</p>
-            
-            <div class="step">
-                <span class="step-number">1</span>
-                <h3 class="step-title">
-                    <i class="fas fa-download"></i>
-                    CLONE THE REPO!
-                </h3>
-                <pre><code>git clone https://github.com/iamovi/KeysAndFingers.git</code></pre>
-            </div>
-
-            <div class="step">
-                <span class="step-number">2</span>
-                <h3 class="step-title">
-                    <i class="fas fa-folder-open"></i>
-                    JUMP INTO THE FOLDER!
-                </h3>
-                <pre><code>cd KeysAndFingers</code></pre>
-            </div>
-
-            <div class="step">
-                <span class="step-number">3</span>
-                <h3 class="step-title">
-                    <i class="fas fa-box"></i>
-                    INSTALL DEPENDENCIES!
-                </h3>
-                <pre><code>npm install</code></pre>
-            </div>
-
-            <div class="step">
-                <span class="step-number">4</span>
-                <h3 class="step-title">
-                    <i class="fas fa-rocket"></i>
-                    LAUNCH IT!
-                </h3>
-                <pre><code>npm run dev</code></pre>
-            </div>
-
-            <div style="text-align: center; margin-top: 3rem;">
-                <p class="action-word">BOOM!</p>
-                <p style="font-size: 1.3rem; font-weight: 700; margin-top: 1rem;">
-                    You're now running at <strong>localhost:5173</strong>! 🎉
-                </p>
-            </div>
-        </section>
-
         <section id="usage">
             <h2 class="section-title">HOW TO USE IT!</h2>
             <p class="section-subtitle">It's so EASY even a caveman could do it! 🦴</p>
@@ -989,7 +220,8 @@
                         <i class="fas fa-play"></i>
                     </div>
                     <h3 class="feature-title">START TYPING!</h3>
-                    <p class="feature-description">Just open the app and START TYPING! No setup, no fuss, just PURE TYPING ACTION! 💥</p>
+                    <p class="feature-description">Just open the app and START TYPING! No setup, no fuss, just PURE
+                        TYPING ACTION! 💥</p>
                 </div>
 
                 <div class="feature-card">
@@ -997,7 +229,8 @@
                         <i class="fas fa-chart-line"></i>
                     </div>
                     <h3 class="feature-title">TRACK YOUR STATS!</h3>
-                    <p class="feature-description">Watch your WPM, accuracy, and CPM in REAL-TIME! See yourself getting BETTER! 📈</p>
+                    <p class="feature-description">Watch your WPM, accuracy, and CPM in REAL-TIME! See yourself getting
+                        BETTER! 📈</p>
                 </div>
 
                 <div class="feature-card">
@@ -1010,6 +243,35 @@
             </div>
         </section>
 
+        <section id="vsmode">
+            <h2 class="section-title">VS MODE DISPATCH!</h2>
+            <p class="section-subtitle">Tactical typing combat redefined with V1.1 features! 🎖️</p>
+
+            <div class="step">
+                <span class="step-number">01</span>
+                <h3 class="step-title">MANUAL GO CONTROL</h3>
+                <p class="feature-description">No more rushing! The Battle Intro GIF now stays active as long as you
+                    need. Study the rules, prepare your fingers, and hit the <strong>skewed orange GO button</strong>
+                    only when you're 100% ready to fight! 🕹️</p>
+            </div>
+
+            <div class="step">
+                <span class="step-number">02</span>
+                <h3 class="step-title">SKELETON REWARDS</h3>
+                <p class="feature-description">Victory spoilers now load with class. Our new <strong>Skeleton
+                        Shine</strong> technology ensures you see a smooth, shimmering loading state while your
+                    high-quality Waifu reward is being summoned! No more blank boxes! ✨</p>
+            </div>
+
+            <div class="step">
+                <span class="step-number">03</span>
+                <h3 class="step-title">MOBILE-READY ARENA</h3>
+                <p class="feature-description">Experience the same battle intensity on your phone. The intro auto-adapts
+                    with a <strong>dual-column grid</strong> and optimized font sizes, keeping the GIF and action
+                    buttons accessible in any orientation! 📱</p>
+            </div>
+        </section>
+
         <section id="contributing">
             <h2 class="section-title">JOIN THE TEAM!</h2>
             <p class="section-subtitle">Help us make Keys&Fingers even MORE AWESOME! 🌟</p>
@@ -1019,7 +281,8 @@
                         <i class="fab fa-github"></i>
                     </div>
                     <h3 class="feature-title">FORK IT!</h3>
-                    <p class="feature-description">Create your own fork on GitHub and start making AWESOME changes! 🍴</p>
+                    <p class="feature-description">Create your own fork on GitHub and start making AWESOME changes! 🍴
+                    </p>
                 </div>
 
                 <div class="feature-card">
@@ -1045,7 +308,8 @@
             <p style="font-size: 1.5rem; font-weight: 700; margin-top: 1rem;">
                 Ready to become a TYPING SUPERHERO? 🦸‍♀️
             </p>
-            <a href="https://iamovi.github.io/KeysAndFingers/" class="btn btn-primary" style="margin-top: 2rem; display: inline-flex;">
+            <a href="https://iamovi.github.io/KeysAndFingers/" class="btn btn-primary"
+                style="margin-top: 2rem; display: inline-flex;">
                 <i class="fas fa-rocket"></i>
                 LET'S GO!!!
             </a>
@@ -1056,140 +320,13 @@
         <div class="container">
             <div class="footer-content">
                 <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Released under the MIT License</p>
-                <p style="font-size: 1.3rem; margin-bottom: 1rem;">Made with <i class="fas fa-heart" style="color: var(--red);"></i> by <strong>Ovi ren</strong></p>
+                <p style="font-size: 1.3rem; margin-bottom: 1rem;">Made with <i class="fas fa-heart"
+                        style="color: var(--red);"></i> by <strong>Ovi ren</strong></p>
             </div>
         </div>
     </footer>
 
-    <script>
-        // Theme Toggle
-        const themeToggle = document.getElementById('themeToggle');
-        const sunIcon = document.getElementById('sunIcon');
-        const moonIcon = document.getElementById('moonIcon');
-        const html = document.documentElement;
-
-        const currentTheme = localStorage.getItem('theme') || 'light';
-        html.setAttribute('data-theme', currentTheme);
-        updateThemeIcon(currentTheme);
-
-        themeToggle.addEventListener('click', () => {
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeIcon(newTheme);
-            
-            if (newTheme === 'dark') {
-                initParticles();
-                animateParticles();
-            }
-        });
-
-        function updateThemeIcon(theme) {
-            if (theme === 'dark') {
-                sunIcon.style.display = 'none';
-                moonIcon.style.display = 'block';
-            } else {
-                sunIcon.style.display = 'block';
-                moonIcon.style.display = 'none';
-            }
-        }
-
-        // Mobile Menu
-        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-        const navLinks = document.getElementById('navLinks');
-
-        mobileMenuToggle.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-        });
-
-        navLinks.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', () => {
-                navLinks.classList.remove('active');
-            });
-        });
-
-        // Particle System
-        const canvas = document.getElementById('particles');
-        const ctx = canvas.getContext('2d');
-        let particlesArray = [];
-        let animationId;
-
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            if (html.getAttribute('data-theme') === 'dark') {
-                initParticles();
-            }
-        });
-
-        class Particle {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2 + 1;
-                this.speedX = Math.random() * 1 - 0.5;
-                this.speedY = Math.random() * 1 - 0.5;
-                this.opacity = Math.random() * 0.5 + 0.3;
-                this.color = ['#FFD700', '#FF3B3F', '#00A8FF', '#A463F2'][Math.floor(Math.random() * 4)];
-            }
-
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-
-                if (this.x > canvas.width) this.x = 0;
-                if (this.x < 0) this.x = canvas.width;
-                if (this.y > canvas.height) this.y = 0;
-                if (this.y < 0) this.y = canvas.height;
-            }
-
-            draw() {
-                ctx.fillStyle = this.color;
-                ctx.globalAlpha = this.opacity;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.globalAlpha = 1;
-            }
-        }
-
-        function initParticles() {
-            particlesArray = [];
-            const numberOfParticles = Math.floor((canvas.width * canvas.height) / 10000);
-            for (let i = 0; i < numberOfParticles; i++) {
-                particlesArray.push(new Particle());
-            }
-        }
-
-        function animateParticles() {
-            const theme = html.getAttribute('data-theme');
-            
-            if (theme === 'dark') {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                particlesArray.forEach(particle => {
-                    particle.update();
-                    particle.draw();
-                });
-                
-                animationId = requestAnimationFrame(animateParticles);
-            } else {
-                if (animationId) {
-                    cancelAnimationFrame(animationId);
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                }
-            }
-        }
-
-        if (currentTheme === 'dark') {
-            initParticles();
-            animateParticles();
-        }
-    </script>
+    <script src="./main.js"></script>
 </body>
+
 </html>
