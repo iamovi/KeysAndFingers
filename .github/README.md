@@ -1,36 +1,50 @@
 <div align="center">
   <img src="alien.png" width="86" alt="Keys&Fingers Logo" />
 
-  `Keys&Fingers` is a A glitch-themed typing speed test. Measure your WPM, accuracy, and improve your typing skills.
+  `Keys&Fingers` advanced, customizable, open source, free typing trainer with multiplayer battle mode.
 
   ![preview](./preview.gif)
 
-  ## Play Keys&Fingers
+  ## Play Keys&Fingers + docs
+
+  **[https://docs-keysandfingers.netlify.app](https://docs-keysandfingers.netlify.app)**
 
   **[https://iamovi.github.io/KeysAndFingers/](https://iamovi.github.io/KeysAndFingers/)**
 
-  ### Run Locally to Contribute
+  ## Download Keys&Fingers
 
-```bash
-git clone https://github.com/iamovi/KeysAndFingers.git
-```
+  ![app preview](https://raw.githubusercontent.com/iamovi/KeysAndFingers/main/Apps/app_preview.png)
 
-```bash
-cd KeysAndFingers
-```
-
-```bash
-npm install
-```
-
-```bash
-npm run dev
-``` 
-Make your changes, push to your fork new branch and create a pull request.
+  **[https://github.com/iamovi/KeysAndFingers/releases](https://github.com/iamovi/KeysAndFingers/releases)**
 
 ---
 
-released under [MIT](./LICENSE) License,
+```md
+## features ##
 
-crated by [Ovi ren](https://iamovi.github.io)
+i. real-time vs mode Room system with live sync.
+
+ii. advanced theme engine with google fonts and glassmorphism.
+
+iii. automated waifu rewards with skeleton loading screens.
+
+iv. battle intro gif with tactical briefing panels.
+
+v. performance tracking with analytics and heatmaps.
+
+vi. multiple difficulty levels and custom text support.
+
+vii. mobile optimized interface and sound effects.
+```
+
+---
+
+![windows](./windows-preview.png)
+
+**released under [MIT](./LICENSE) License,**
+
+**crated by [Ovi ren](https://iamovi.github.io)**
+
+  <img src="alien.png" width="86" alt="Keys&Fingers Logo" />
 </div>
+
