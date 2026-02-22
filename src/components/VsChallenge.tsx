@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { usePeerChallenge, PlayerProgress } from '@/hooks/usePeerChallenge';
+import { useVsChallenge, PlayerProgress } from '@/hooks/useVsChallenge';
 import { useTypingGame } from '@/hooks/useTypingGame';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import TypingArea from '@/components/TypingArea';
+import { toast } from 'sonner';
 import {
     Copy,
     Check,
@@ -40,12 +41,22 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         sendFinish,
         requestRematch,
         leaveRoom,
+        setReady,
+        setPlayerName,
+        resetPlayerName,
+        isReady,
+        isOpponentReady,
         challengeText,
-    } = usePeerChallenge();
+        opponentName,
+        playerName,
+    } = useVsChallenge();
 
     const [joinCode, setJoinCode] = useState('');
     const [copied, setCopied] = useState(false);
     const [myFinishData, setMyFinishData] = useState<PlayerProgress | null>(null);
+    const [nameInput, setNameInput] = useState('');
+    const [rewardImg, setRewardImg] = useState<string | null>(null);
+    const [loadingReward, setLoadingReward] = useState(false);
 
     // Use empty string when no text yet, swap in when text arrives
     const activeText = challengeText ?? '';
@@ -62,6 +73,19 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
             prevInputLen.current = 0;
         }
     }, [challengeText]);
+
+    // Toast notifications for connection status
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+        }
+    }, [error]);
+
+    useEffect(() => {
+        if (opponentConnected && phase !== 'idle') {
+            toast.success(`${opponentName || 'Opponent'} connected!`);
+        }
+    }, [opponentConnected, opponentName]);
 
     // Sound effects
     useEffect(() => {
@@ -132,10 +156,90 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
 
     const handleRematch = useCallback(() => {
         setMyFinishData(null);
+        setRewardImg(null);
         reset();
         prevInputLen.current = 0;
         requestRematch();
     }, [requestRematch, reset]);
+
+    const handleSetName = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (nameInput.trim()) {
+            setPlayerName(nameInput.trim());
+        }
+    };
+
+    // Fetch Reward when both are finished
+    useEffect(() => {
+        const myData = myFinishData || (phase === 'finished' ? { finished: true } : null);
+        if (myData?.finished && opponentProgress.finished && !rewardImg && !loadingReward) {
+            const fetchReward = async () => {
+                setLoadingReward(true);
+                try {
+                    const res = await fetch('https://api.waifu.pics/sfw/waifu');
+                    const data = await res.json();
+                    if (data.url) {
+                        setRewardImg(data.url);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch waifu reward:', err);
+                } finally {
+                    setLoadingReward(false);
+                }
+            };
+            fetchReward();
+        }
+    }, [myFinishData, opponentProgress.finished, rewardImg, loadingReward, phase]);
+
+    // ===== NAME: Get username first =====
+    if (!playerName) {
+        return (
+            <div className="max-w-md mx-auto py-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="text-center space-y-2">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-2">
+                        <UserPlus className="h-8 w-8 text-primary" />
+                    </div>
+                    <h2 className="text-2xl font-bold font-mono glitch-text" data-text="Identify Yourself">
+                        Identify Yourself
+                    </h2>
+                    <p className="text-sm text-muted-foreground font-mono">
+                        Enter a nickname to show your opponent
+                    </p>
+                </div>
+
+                <form onSubmit={handleSetName} className="space-y-4">
+                    <div className="space-y-2">
+                        <input
+                            type="text"
+                            value={nameInput}
+                            onChange={(e) => setNameInput(e.target.value)}
+                            placeholder="YOUR NICKNAME"
+                            autoFocus
+                            className="w-full text-center text-xl font-mono font-bold uppercase bg-background border-2 border-border rounded-lg px-4 py-3 focus:outline-none focus:border-primary transition-all shadow-sm"
+                            maxLength={12}
+                        />
+                        <p className="text-[10px] text-center text-muted-foreground font-mono uppercase tracking-widest">
+                            Max 12 characters
+                        </p>
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={!nameInput.trim()}
+                        className="w-full py-4 bg-primary text-primary-foreground font-mono font-bold rounded-lg shadow-lg hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        START RACING
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onExit}
+                        className="w-full py-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        CANCEL
+                    </button>
+                </form>
+            </div>
+        );
+    }
 
     // ===== IDLE: Choose create or join =====
     if (phase === 'idle') {
@@ -151,6 +255,17 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                     <p className="text-sm text-muted-foreground font-mono">
                         Race against a friend in real-time typing battle
                     </p>
+                </div>
+
+                <div className="text-center pb-4">
+                    <button
+                        onClick={resetPlayerName}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border hover:bg-secondary transition-colors group"
+                    >
+                        <span className="text-[10px] font-mono text-muted-foreground">PLAYING AS:</span>
+                        <span className="text-xs font-mono font-bold text-foreground">{playerName}</span>
+                        <span className="text-[10px] font-mono text-primary underline underline-offset-2 opacity-0 group-hover:opacity-100 transition-opacity">CHANGE</span>
+                    </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -219,7 +334,7 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
             <div className="max-w-lg mx-auto py-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="text-center space-y-2">
                     <h2 className="text-2xl font-bold font-mono glitch-text" data-text="Waiting...">
-                        {opponentConnected ? 'Opponent Connected!' : 'Waiting for Opponent...'}
+                        {opponentConnected ? `${opponentName || 'Opponent'} Joined!` : `Waiting for ${opponentName || 'Opponent'}...`}
                     </h2>
                 </div>
 
@@ -244,29 +359,46 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                     </div>
                 )}
 
-                {/* Connection Status */}
-                <div className="flex items-center justify-center gap-3 p-4 rounded-lg border border-border bg-card">
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-success animate-pulse" />
-                        <span className="text-xs font-mono">You ({isHost ? 'Host' : 'Guest'})</span>
+                {/* Connection Status & Ready Controls */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-center gap-3 p-4 rounded-lg border border-border bg-card">
+                        <div className="flex flex-col items-center gap-2 flex-1">
+                            <div className="flex items-center gap-2">
+                                <div className={`w-3 h-3 rounded-full ${isReady ? 'bg-success shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-muted'} transition-all`} />
+                                <span className="text-xs font-mono font-bold truncate max-w-[100px]">{playerName}</span>
+                            </div>
+                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${isReady ? 'bg-success/20 text-success' : 'bg-secondary text-muted-foreground'}`}>
+                                {isReady ? 'READY' : 'NOT READY'}
+                            </span>
+                        </div>
+
+                        <div className="text-muted-foreground font-mono text-xl italic opacity-30">VS</div>
+
+                        <div className="flex flex-col items-center gap-2 flex-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-mono font-bold truncate max-w-[100px]">{opponentName || '...'}</span>
+                                <div className={`w-3 h-3 rounded-full ${isOpponentReady ? 'bg-success shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-muted'} transition-all`} />
+                            </div>
+                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${isOpponentReady ? 'bg-success/20 text-success' : 'bg-secondary text-muted-foreground'}`}>
+                                {isOpponentReady ? 'READY' : 'NOT READY'}
+                            </span>
+                        </div>
                     </div>
-                    <span className="text-muted-foreground font-mono">vs</span>
-                    <div className="flex items-center gap-2">
-                        {opponentConnected ? (
-                            <>
-                                <div className="w-3 h-3 rounded-full bg-success animate-pulse" />
-                                <Wifi className="h-3.5 w-3.5 text-success" />
-                            </>
-                        ) : (
-                            <>
-                                <Loader2 className="h-3.5 w-3.5 text-muted-foreground animate-spin" />
-                                <WifiOff className="h-3.5 w-3.5 text-muted-foreground" />
-                            </>
-                        )}
-                        <span className="text-xs font-mono text-muted-foreground">
-                            {opponentConnected ? 'Connected' : 'Waiting...'}
-                        </span>
-                    </div>
+
+                    {opponentConnected && !isReady && (
+                        <button
+                            onClick={setReady}
+                            className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-white font-mono font-bold rounded-lg shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] animate-in fade-in zoom-in-95 duration-300"
+                        >
+                            CLICK TO READY
+                        </button>
+                    )}
+
+                    {opponentConnected && isReady && !isOpponentReady && (
+                        <div className="w-full py-4 bg-secondary text-muted-foreground font-mono text-xs text-center rounded-lg border border-border italic">
+                            Waiting for opponent to ready up...
+                        </div>
+                    )}
                 </div>
 
                 {error && (
@@ -329,7 +461,7 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                         <div className="flex items-center justify-between text-xs font-mono">
                             <span className="flex items-center gap-1.5">
                                 <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
-                                You
+                                {playerName}
                             </span>
                             <span className="tabular-nums">{stats.wpm} WPM · {stats.accuracy}%</span>
                         </div>
@@ -352,7 +484,7 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                         <div className="flex items-center justify-between text-xs font-mono">
                             <span className="flex items-center gap-1.5">
                                 <span className="inline-block w-2 h-2 rounded-full bg-blue-500" />
-                                Opponent
+                                {opponentName || 'Opponent'}
                             </span>
                             <span className="tabular-nums">{opponentProgress.wpm} WPM · {opponentProgress.accuracy}%</span>
                         </div>
@@ -418,12 +550,12 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                 {/* Winner Banner */}
                 <div className="text-center space-y-2">
                     <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-2 ${!oppFinished
-                            ? 'bg-amber-500/20 border border-amber-500/30'
-                            : iWon
-                                ? 'bg-gradient-to-br from-amber-500/20 to-yellow-500/20 border border-amber-500/40 vs-winner-glow'
-                                : isDraw
-                                    ? 'bg-secondary border border-border'
-                                    : 'bg-blue-500/20 border border-blue-500/30'
+                        ? 'bg-amber-500/20 border border-amber-500/30'
+                        : iWon
+                            ? 'bg-gradient-to-br from-amber-500/20 to-yellow-500/20 border border-amber-500/40 vs-winner-glow'
+                            : isDraw
+                                ? 'bg-secondary border border-border'
+                                : 'bg-blue-500/20 border border-blue-500/30'
                         }`}>
                         {!oppFinished ? (
                             <Loader2 className="h-8 w-8 text-amber-500 animate-spin" />
@@ -436,9 +568,9 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                         )}
                     </div>
                     <h2 className="text-2xl font-bold font-mono glitch-text"
-                        data-text={!oppFinished ? 'Waiting for opponent...' : iWon ? 'You Win!' : isDraw ? "It's a Draw!" : 'Opponent Wins!'}
+                        data-text={!oppFinished ? `Waiting for ${opponentName || 'Opponent'}...` : iWon ? 'You Win!' : isDraw ? "It's a Draw!" : `${opponentName || 'Opponent'} Wins!`}
                     >
-                        {!oppFinished ? 'Waiting for opponent...' : iWon ? 'You Win!' : isDraw ? "It's a Draw!" : 'Opponent Wins!'}
+                        {!oppFinished ? `Waiting for ${opponentName || 'Opponent'}...` : iWon ? 'You Win!' : isDraw ? "It's a Draw!" : `${opponentName || 'Opponent'} Wins!`}
                     </h2>
                 </div>
 
@@ -446,8 +578,8 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                 <div className="grid grid-cols-2 gap-3">
                     {/* Your Results */}
                     <div className={`rounded-lg border p-4 space-y-3 ${iWon && oppFinished ? 'border-amber-500/50 bg-amber-500/5' : 'border-border bg-card'}`}>
-                        <div className="text-center">
-                            <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-500">You</span>
+                        <div className="text-center overflow-hidden">
+                            <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-500 truncate block">{playerName}</span>
                         </div>
                         <VsStatItem label="WPM" value={myData.wpm} highlight={iWon && oppFinished} />
                         <VsStatItem label="Accuracy" value={`${myData.accuracy}%`} />
@@ -461,8 +593,8 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
 
                     {/* Opponent Results */}
                     <div className={`rounded-lg border p-4 space-y-3 ${!iWon && !isDraw && oppFinished ? 'border-blue-500/50 bg-blue-500/5' : 'border-border bg-card'}`}>
-                        <div className="text-center">
-                            <span className="text-xs font-mono font-bold uppercase tracking-widest text-blue-500">Opponent</span>
+                        <div className="text-center overflow-hidden">
+                            <span className="text-xs font-mono font-bold uppercase tracking-widest text-blue-500 truncate block">{opponentName || 'Opponent'}</span>
                         </div>
                         {oppFinished ? (
                             <>
@@ -478,12 +610,45 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                         ) : (
                             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                                 <Loader2 className="h-6 w-6 animate-spin mb-2" />
-                                <span className="text-xs font-mono">Still typing...</span>
+                                <span className="text-xs font-mono">{opponentName || 'Opponent'} is still typing...</span>
                                 <span className="text-xs font-mono mt-1">{oppData.progress}% complete</span>
                             </div>
                         )}
                     </div>
                 </div>
+
+                {/* Waifu Reward Section */}
+                {oppFinished && (iWon || !oppFinished) && (
+                    <div className="animate-in fade-in zoom-in slide-in-from-top-4 duration-700 delay-300">
+                        <div className="p-1 rounded-xl bg-gradient-to-r from-amber-500 via-pink-500 to-red-500">
+                            <div className="bg-card rounded-[10px] p-6 space-y-4 text-center">
+                                <div className="space-y-1">
+                                    <h3 className="text-lg font-bold font-mono text-foreground">
+                                        {iWon ? "WINNER'S REWARD" : "CONSOLATION PRIZE"}
+                                    </h3>
+                                    <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.2em]">
+                                        Here is a waifu for you
+                                    </p>
+                                </div>
+
+                                <div className="relative aspect-[4/5] sm:aspect-video w-full max-w-sm mx-auto rounded-lg overflow-hidden border border-border shadow-2xl bg-muted">
+                                    {loadingReward || !rewardImg ? (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                                            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                                            <span className="text-[10px] font-mono text-muted-foreground">SUMMONING WAIFU...</span>
+                                        </div>
+                                    ) : (
+                                        <img
+                                            src={rewardImg}
+                                            alt="Waifu Reward"
+                                            className="w-full h-full object-contain sm:object-cover animate-in fade-in duration-1000"
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Actions */}
                 <div className="flex items-center justify-center gap-3">
