@@ -16,7 +16,6 @@ import {
     Target,
     Clock,
     Wifi,
-    WifiOff,
     Crown,
     Loader2,
 } from 'lucide-react';
@@ -51,6 +50,8 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         opponentName,
         playerName,
         rewardUrl,
+        difficulty,
+        setVsDifficulty,
     } = useVsChallenge();
 
     const [joinCode, setJoinCode] = useState('');
@@ -59,14 +60,12 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
     const [nameInput, setNameInput] = useState('');
     const [loadingReward, setLoadingReward] = useState(false);
 
-    // Use empty string when no text yet, swap in when text arrives
     const activeText = challengeText ?? '';
     const { stats, userInput, handleInput, reset, targetText } = useTypingGame(activeText);
     const { playKeystroke, playError, playComplete, playMilestone } = useSoundEffects(soundEnabled);
 
     const prevInputLen = useRef(0);
 
-    // Reset game state when text changes (new challenge or rematch)
     useEffect(() => {
         if (challengeText) {
             reset();
@@ -75,7 +74,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         }
     }, [challengeText]);
 
-    // Toast notifications for connection status
     useEffect(() => {
         if (error) {
             toast.error(error);
@@ -88,7 +86,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         }
     }, [opponentConnected, opponentName]);
 
-    // Sound effects
     useEffect(() => {
         if (phase !== 'racing') return;
         if (userInput.length > prevInputLen.current) {
@@ -107,7 +104,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         prevInputLen.current = userInput.length;
     }, [userInput, phase]);
 
-    // Send progress updates while racing
     useEffect(() => {
         if (phase !== 'racing' || stats.isComplete) return;
         const p: PlayerProgress = {
@@ -123,7 +119,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         sendProgress(p);
     }, [stats.progress, stats.wpm, phase]);
 
-    // Handle completion
     useEffect(() => {
         if (phase === 'racing' && stats.isComplete && !myFinishData) {
             playComplete();
@@ -150,7 +145,11 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         }
     }, [roomCode]);
 
-    const handleLeave = useCallback(() => {
+    const handleLeaveRoom = useCallback(() => {
+        leaveRoom();
+    }, [leaveRoom]);
+
+    const handleBackToSolo = useCallback(() => {
         leaveRoom();
         onExit();
     }, [leaveRoom, onExit]);
@@ -169,15 +168,12 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         }
     };
 
-    // Fetch Reward when both are finished - ONLY WINNER FETCHES AND SENDS
     useEffect(() => {
         const myData = myFinishData || (phase === 'finished' ? { finished: true, wpm: stats.wpm } : null);
         const oppData = opponentProgress;
 
         if (myData?.finished && oppData.finished && !rewardUrl && !loadingReward) {
             const iWon = (myData.wpm || 0) > (oppData.wpm || 0);
-
-            // Only the winner fetches and broadcasts the reward
             if (iWon) {
                 const fetchReward = async () => {
                     setLoadingReward(true);
@@ -198,7 +194,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         }
     }, [myFinishData, opponentProgress.finished, rewardUrl, loadingReward, phase, sendReward]);
 
-    // ===== NAME: Get username first =====
     if (!playerName) {
         return (
             <div className="max-w-md mx-auto py-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -248,94 +243,93 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         );
     }
 
-    // ===== IDLE: Choose create or join =====
     if (phase === 'idle') {
         return (
-            <div className="max-w-lg mx-auto py-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="text-center space-y-2">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-amber-500/20 to-red-500/20 border border-amber-500/30 mb-2">
-                        <Swords className="h-8 w-8 text-amber-500" />
-                    </div>
-                    <h2 className="text-2xl font-bold font-mono glitch-text" data-text="VS Challenge">
-                        VS Challenge
-                    </h2>
-                    <p className="text-sm text-muted-foreground font-mono">
-                        Race against a friend in real-time typing battle
-                    </p>
-                </div>
-
-                <div className="text-center pb-4">
+            <div className="relative max-w-2xl mx-auto py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="absolute top-0 right-0 sm:-right-4">
                     <button
                         onClick={resetPlayerName}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border hover:bg-secondary transition-colors group"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/30 border border-border hover:bg-secondary transition-colors group"
+                        title="Change Name"
                     >
-                        <span className="text-[10px] font-mono text-muted-foreground">PLAYING AS:</span>
+                        <span className="text-[10px] font-mono text-muted-foreground hidden sm:inline">PLAYING AS:</span>
                         <span className="text-xs font-mono font-bold text-foreground">{playerName}</span>
-                        <span className="text-[10px] font-mono text-primary underline underline-offset-2 opacity-0 group-hover:opacity-100 transition-opacity">CHANGE</span>
+                        <span className="text-[10px] font-mono text-primary underline underline-offset-2 transition-opacity">CHANGE</span>
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Create Room */}
-                    <button
-                        onClick={createRoom}
-                        className="vs-card group flex flex-col items-center gap-3 p-6 rounded-lg border border-border bg-card hover:border-amber-500/50 hover:bg-amber-500/5 transition-all duration-300"
-                    >
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Swords className="h-6 w-6 text-amber-500" />
+                <div className="max-w-lg mx-auto space-y-6 pt-8">
+                    <div className="text-center space-y-2">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-amber-500/20 to-red-500/20 border border-amber-500/30 mb-2">
+                            <Swords className="h-8 w-8 text-amber-500" />
                         </div>
-                        <span className="text-sm font-mono font-bold">Create Room</span>
-                        <span className="text-xs text-muted-foreground font-mono text-center">
-                            Get a code to share with your opponent
-                        </span>
-                    </button>
+                        <h2 className="text-2xl font-bold font-mono glitch-text" data-text="VS Challenge">
+                            VS Challenge
+                        </h2>
+                        <p className="text-sm text-muted-foreground font-mono">
+                            Race against a friend in real-time typing battle
+                        </p>
+                    </div>
 
-                    {/* Join Room */}
-                    <div className="flex flex-col gap-3 p-6 rounded-lg border border-border bg-card vs-card">
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
-                                <UserPlus className="h-6 w-6 text-blue-500" />
-                            </div>
-                            <span className="text-sm font-mono font-bold">Join Room</span>
-                        </div>
-                        <input
-                            type="text"
-                            value={joinCode}
-                            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                            placeholder="ENTER CODE"
-                            maxLength={6}
-                            className="w-full text-center text-lg font-mono font-bold tracking-[0.3em] uppercase bg-background border border-border rounded-md px-3 py-2 placeholder:text-muted-foreground/40 placeholder:tracking-[0.2em] focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
-                        />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <button
-                            onClick={() => joinRoom(joinCode)}
-                            disabled={joinCode.length < 4}
-                            className="w-full px-4 py-2 text-xs font-mono font-bold rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            onClick={createRoom}
+                            className="vs-card group flex flex-col items-center gap-3 p-6 rounded-lg border border-border bg-card hover:border-amber-500/50 hover:bg-amber-500/5 transition-all duration-300"
                         >
-                            Join
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Swords className="h-6 w-6 text-amber-500" />
+                            </div>
+                            <span className="text-sm font-mono font-bold">Create Room</span>
+                            <span className="text-xs text-muted-foreground font-mono text-center">
+                                Get a code to share with your opponent
+                            </span>
+                        </button>
+
+                        <div className="flex flex-col gap-3 p-6 rounded-lg border border-border bg-card vs-card">
+                            <div className="flex flex-col items-center gap-3">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
+                                    <UserPlus className="h-6 w-6 text-blue-500" />
+                                </div>
+                                <span className="text-sm font-mono font-bold">Join Room</span>
+                            </div>
+                            <input
+                                type="text"
+                                value={joinCode}
+                                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                                placeholder="ENTER CODE"
+                                maxLength={6}
+                                className="w-full text-center text-lg font-mono font-bold tracking-[0.3em] uppercase bg-background border border-border rounded-md px-3 py-2 placeholder:text-muted-foreground/40 placeholder:tracking-[0.2em] focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                            />
+                            <button
+                                onClick={() => joinRoom(joinCode)}
+                                disabled={joinCode.length < 4}
+                                className="w-full px-4 py-2 text-xs font-mono font-bold rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                Join
+                            </button>
+                        </div>
+                    </div>
+
+                    {error && (
+                        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-center">
+                            <p className="text-xs font-mono text-destructive">{error}</p>
+                        </div>
+                    )}
+
+                    <div className="text-center">
+                        <button
+                            onClick={handleBackToSolo}
+                            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            <LogOut className="h-3 w-3" />
+                            Back to Solo
                         </button>
                     </div>
-                </div>
-
-                {error && (
-                    <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-center">
-                        <p className="text-xs font-mono text-destructive">{error}</p>
-                    </div>
-                )}
-
-                <div className="text-center">
-                    <button
-                        onClick={onExit}
-                        className="inline-flex items-center gap-2 px-4 py-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                        <LogOut className="h-3 w-3" />
-                        Back to Solo
-                    </button>
                 </div>
             </div>
         );
     }
 
-    // ===== LOBBY: Waiting for opponent =====
     if (phase === 'lobby') {
         return (
             <div className="max-w-lg mx-auto py-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -345,7 +339,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                     </h2>
                 </div>
 
-                {/* Room Code Display */}
                 {roomCode && isHost && (
                     <div className="space-y-3 p-6 rounded-lg border border-border bg-card text-center">
                         <p className="text-xs font-mono text-muted-foreground uppercase tracking-widest">
@@ -365,8 +358,51 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                         </div>
                     </div>
                 )}
+                {/* Difficulty Selection */}
+                <div className="space-y-3 p-6 rounded-lg border border-border bg-card">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                            Difficulty
+                        </span>
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${difficulty === 'easy' ? 'bg-green-500/20 text-green-500' :
+                            difficulty === 'medium' ? 'bg-amber-500/20 text-amber-500' :
+                                'bg-red-500/20 text-red-500'
+                            } uppercase font-bold`}>
+                            {difficulty}
+                        </span>
+                    </div>
 
-                {/* Connection Status & Ready Controls */}
+                    {isHost ? (
+                        <div className="grid grid-cols-3 gap-2">
+                            {(['easy', 'medium', 'hard'] as const).map((d) => (
+                                <button
+                                    key={d}
+                                    onClick={() => setVsDifficulty(d)}
+                                    disabled={!opponentConnected}
+                                    className={`py-2 text-[10px] font-mono font-bold rounded border transition-all ${difficulty === d
+                                        ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20'
+                                        : 'bg-secondary/50 text-muted-foreground border-border hover:bg-secondary hover:text-foreground'
+                                        } ${!opponentConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    {d.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="w-full py-2 px-4 bg-secondary/30 border border-border rounded text-center">
+                            <span className="text-xs font-mono text-muted-foreground italic">
+                                Waiting for host to choose...
+                            </span>
+                        </div>
+                    )}
+
+                    {isHost && !opponentConnected && (
+                        <p className="text-[9px] font-mono text-muted-foreground text-center animate-pulse">
+                            Connect opponent to change settings
+                        </p>
+                    )}
+                </div>
+
                 <div className="space-y-4">
                     <div className="flex items-center justify-center gap-3 p-4 rounded-lg border border-border bg-card">
                         <div className="flex flex-col items-center gap-2 flex-1">
@@ -416,7 +452,7 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
 
                 <div className="text-center">
                     <button
-                        onClick={handleLeave}
+                        onClick={handleLeaveRoom}
                         className="inline-flex items-center gap-2 px-4 py-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors"
                     >
                         <LogOut className="h-3 w-3" />
@@ -427,7 +463,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         );
     }
 
-    // ===== COUNTDOWN =====
     if (phase === 'countdown') {
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm">
@@ -444,14 +479,12 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         );
     }
 
-    // ===== RACING =====
     if (phase === 'racing') {
         const myProgress = stats.progress;
         const oppProgress = opponentProgress.progress;
 
         return (
             <div className="space-y-4 animate-in fade-in duration-300">
-                {/* Race Progress Bars */}
                 <div className="rounded-lg border border-border bg-card p-4 space-y-3">
                     <div className="flex items-center justify-between">
                         <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground font-bold">
@@ -463,7 +496,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                         </div>
                     </div>
 
-                    {/* You */}
                     <div className="space-y-1">
                         <div className="flex items-center justify-between text-xs font-mono">
                             <span className="flex items-center gap-1.5">
@@ -486,7 +518,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                         </div>
                     </div>
 
-                    {/* Opponent */}
                     <div className="space-y-1">
                         <div className="flex items-center justify-between text-xs font-mono">
                             <span className="flex items-center gap-1.5">
@@ -510,7 +541,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                     </div>
                 </div>
 
-                {/* Live Stats */}
                 <div className="grid grid-cols-3 gap-2">
                     <div className="flex flex-col items-center p-2 rounded-md border border-border bg-card/50">
                         <Zap className="h-3.5 w-3.5 text-amber-500 mb-0.5" />
@@ -531,7 +561,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                     </div>
                 </div>
 
-                {/* Typing Area */}
                 <div className="shadow-sm">
                     <TypingArea
                         targetText={targetText}
@@ -544,7 +573,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         );
     }
 
-    // ===== FINISHED =====
     if (phase === 'finished' || myFinishData) {
         const myData = myFinishData || { ...defaultProgress };
         const oppData = opponentProgress;
@@ -554,7 +582,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
 
         return (
             <div className="max-w-2xl mx-auto py-6 space-y-6 animate-in zoom-in-95 fade-in duration-500">
-                {/* Winner Banner */}
                 <div className="text-center space-y-2">
                     <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-2 ${!oppFinished
                         ? 'bg-amber-500/20 border border-amber-500/30'
@@ -581,15 +608,13 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                     </h2>
                 </div>
 
-                {/* Side-by-side comparison */}
                 <div className="grid grid-cols-2 gap-3">
-                    {/* Your Results */}
                     <div className={`rounded-lg border p-4 space-y-3 ${iWon && oppFinished ? 'border-amber-500/50 bg-amber-500/5' : 'border-border bg-card'}`}>
                         <div className="text-center overflow-hidden">
                             <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-500 truncate block">{playerName}</span>
                         </div>
                         <VsStatItem label="WPM" value={myData.wpm} highlight={iWon && oppFinished} />
-                        <VsStatItem label="Accuracy" value={`${myData.accuracy}%`} />
+                        <VsStatItem label="Accuracy" value={myData.accuracy + '%'} />
                         <VsStatItem label="Correct" value={myData.correctChars} />
                         <VsStatItem label="Errors" value={myData.incorrectChars} />
                         <VsStatItem
@@ -598,7 +623,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                         />
                     </div>
 
-                    {/* Opponent Results */}
                     <div className={`rounded-lg border p-4 space-y-3 ${!iWon && !isDraw && oppFinished ? 'border-blue-500/50 bg-blue-500/5' : 'border-border bg-card'}`}>
                         <div className="text-center overflow-hidden">
                             <span className="text-xs font-mono font-bold uppercase tracking-widest text-blue-500 truncate block">{opponentName || 'Opponent'}</span>
@@ -606,7 +630,7 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                         {oppFinished ? (
                             <>
                                 <VsStatItem label="WPM" value={oppData.wpm} highlight={!iWon && !isDraw} />
-                                <VsStatItem label="Accuracy" value={`${oppData.accuracy}%`} />
+                                <VsStatItem label="Accuracy" value={oppData.accuracy + '%'} />
                                 <VsStatItem label="Correct" value={oppData.correctChars} />
                                 <VsStatItem label="Errors" value={oppData.incorrectChars} />
                                 <VsStatItem
@@ -624,7 +648,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                     </div>
                 </div>
 
-                {/* Waifu Reward Section */}
                 {oppFinished && (
                     <div className="animate-in fade-in zoom-in slide-in-from-top-4 duration-700 delay-300">
                         <div className="p-1 rounded-xl bg-gradient-to-r from-amber-500 via-pink-500 to-red-500">
@@ -657,7 +680,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                     </div>
                 )}
 
-                {/* Actions */}
                 <div className="flex items-center justify-center gap-3">
                     <button
                         onClick={handleRematch}
@@ -667,7 +689,7 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                         Rematch
                     </button>
                     <button
-                        onClick={handleLeave}
+                        onClick={handleLeaveRoom}
                         className="flex items-center gap-2 px-6 py-3 border border-border bg-card text-foreground font-mono text-sm rounded-md hover:bg-secondary transition-colors"
                     >
                         <LogOut className="h-4 w-4" />
@@ -681,7 +703,6 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
     return null;
 };
 
-// Small stat row for results
 const VsStatItem = ({ label, value, highlight }: { label: string; value: string | number; highlight?: boolean }) => (
     <div className="flex items-center justify-between">
         <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">{label}</span>

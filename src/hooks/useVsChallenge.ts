@@ -23,6 +23,9 @@ interface VSMessage {
     type: MessageType;
     payload?: any;
     senderId: string;
+    settings?: {
+        difficulty: 'easy' | 'medium' | 'hard';
+    };
 }
 
 const HEARTBEAT_INTERVAL = 3000;
@@ -74,6 +77,8 @@ export interface UsePeerChallengeReturn {
     opponentName: string | null;
     playerName: string | null;
     rewardUrl: string | null;
+    difficulty: 'easy' | 'medium' | 'hard';
+    setVsDifficulty: (d: 'easy' | 'medium' | 'hard') => void;
 }
 
 export const useVsChallenge = (): UsePeerChallengeReturn => {
@@ -90,6 +95,7 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
     const [isReady, setIsReadyState] = useState(false);
     const [isOpponentReady, setIsOpponentReady] = useState(false);
     const [rewardUrl, setRewardUrl] = useState<string | null>(null);
+    const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
 
     const channelRef = useRef<RealtimeChannel | null>(null);
     const myId = useRef<string>(Math.random().toString(36).substring(7));
@@ -162,6 +168,7 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
         setError(null);
         setChallengeText(null);
         setRewardUrl(null);
+        setDifficulty('medium');
     }, [cleanupAll]);
 
     const setPlayerName = useCallback((name: string) => {
@@ -237,16 +244,21 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
 
         if (host) {
             import('@/data/texts').then(({ getRandomText }) => {
-                const t = getRandomText('medium');
+                const t = getRandomText(difficulty);
                 setChallengeText(t.text);
                 channelRef.current?.send({
                     type: 'broadcast',
                     event: 'vs',
-                    payload: { type: 'text', payload: t.text, senderId: myId.current } as VSMessage
+                    payload: {
+                        type: 'text',
+                        payload: t.text,
+                        senderId: myId.current,
+                        settings: { difficulty }
+                    } as VSMessage
                 });
             });
         }
-    }, []);
+    }, [difficulty]);
 
     const setReady = useCallback(() => {
         if (!channelRef.current || phaseRef.current !== 'lobby' || !opponentConnected) return;
@@ -318,6 +330,9 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
                     case 'text':
                         if (payload.payload) {
                             setChallengeText(payload.payload);
+                        }
+                        if (payload.settings?.difficulty) {
+                            setDifficulty(payload.settings.difficulty);
                         }
                         break;
 
@@ -402,16 +417,28 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
     useEffect(() => {
         if (isHost && opponentConnected && phase === 'lobby' && !challengeText) {
             import('@/data/texts').then(({ getRandomText }) => {
-                const t = getRandomText('medium');
+                const t = getRandomText(difficulty);
                 setChallengeText(t.text);
                 channelRef.current?.send({
                     type: 'broadcast',
                     event: 'vs',
-                    payload: { type: 'text', payload: t.text, senderId: myId.current } as VSMessage
+                    payload: {
+                        type: 'text',
+                        payload: t.text,
+                        senderId: myId.current,
+                        settings: { difficulty }
+                    } as VSMessage
                 });
             });
         }
-    }, [isHost, opponentConnected, phase, challengeText]);
+    }, [isHost, opponentConnected, phase, challengeText, difficulty]);
+
+    const setVsDifficulty = useCallback((d: 'easy' | 'medium' | 'hard') => {
+        if (!isHost || phase !== 'lobby') return;
+        setDifficulty(d);
+        setChallengeText(null); // Clear to trigger effect above
+        setIsReadyState(false); // Reset ready if difficulty changes
+    }, [isHost, phase]);
 
     const createRoom = useCallback(() => {
         const code = generateCode();
@@ -489,5 +516,7 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
         opponentName,
         playerName,
         rewardUrl,
+        difficulty,
+        setVsDifficulty,
     };
 };

@@ -30,16 +30,20 @@ const Index = () => {
 
   // Toggles
   const [soundEnabled, setSoundEnabled] = useState(() => {
-    try { return localStorage.getItem('keysfingers_sound') !== 'false'; } catch { return true; }
+    const saved = localStorage.getItem('keysfingers_sound');
+    return saved !== null ? saved === 'true' : true;
   });
   const [showHistory, setShowHistory] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showVs, setShowVs] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(() => {
-    try { return localStorage.getItem('keysfingers_keyboard') !== 'false'; } catch { return true; }
+    const saved = localStorage.getItem('keysfingers_keyboard');
+    return saved !== null ? saved === 'true' : true;
   });
   const [darkMode, setDarkMode] = useState(() => {
-    try { return localStorage.getItem('keysfingers_dark') === 'true' || document.documentElement.classList.contains('dark'); } catch { return true; }
+    const saved = localStorage.getItem('keysfingers_dark');
+    if (saved !== null) return saved === 'true';
+    return document.documentElement.classList.contains('dark');
   });
 
   // Apply dark mode class
@@ -58,11 +62,9 @@ const Index = () => {
 
   // Sound toggle persist
   const handleSoundToggle = () => {
-    setSoundEnabled(prev => {
-      const next = !prev;
-      localStorage.setItem('keysfingers_sound', String(next));
-      return next;
-    });
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    localStorage.setItem('keysfingers_sound', String(next));
   };
 
   // Sound effects on typing
@@ -225,11 +227,9 @@ const Index = () => {
         }}
         showKeyboard={showKeyboard}
         onKeyboardToggle={() => {
-          setShowKeyboard(p => {
-            const next = !p;
-            localStorage.setItem('keysfingers_keyboard', String(next));
-            return next;
-          });
+          const next = !showKeyboard;
+          setShowKeyboard(next);
+          localStorage.setItem('keysfingers_keyboard', String(next));
         }}
         darkMode={darkMode}
         onDarkModeToggle={() => setDarkMode(p => !p)}
