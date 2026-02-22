@@ -271,3 +271,46 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ===== VS Challenge Styles ===== */
+
+@keyframes vs-countdown-pop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.vs-countdown-number {
+  animation: vs-countdown-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes vs-winner-pulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.2), 0 0 30px rgba(245, 158, 11, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(245, 158, 11, 0.4), 0 0 50px rgba(245, 158, 11, 0.2);
+  }
+}
+
+.vs-winner-glow {
+  animation: vs-winner-pulse 2s ease-in-out infinite;
+}
+
+.vs-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.vs-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}

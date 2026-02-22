@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Keyboard, Volume2, VolumeX, History, Grid3X3, Menu, X, Monitor, Sun, Moon } from 'lucide-react';
+import { Keyboard, Volume2, VolumeX, History, Grid3X3, Menu, X, Monitor, Sun, Moon, Swords } from 'lucide-react';
 
 interface HeaderProps {
   soundEnabled: boolean;
@@ -12,6 +12,8 @@ interface HeaderProps {
   onKeyboardToggle: () => void;
   darkMode: boolean;
   onDarkModeToggle: () => void;
+  showVs?: boolean;
+  onVsToggle?: () => void;
 }
 
 const Header = ({
@@ -25,11 +27,24 @@ const Header = ({
   onKeyboardToggle,
   darkMode,
   onDarkModeToggle,
+  showVs,
+  onVsToggle,
 }: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const toggleButtons = (
     <>
+      {onVsToggle && (
+        <button
+          onClick={onVsToggle}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded-sm transition-all duration-200
+            ${showVs ? 'bg-amber-500 text-white' : 'bg-secondary text-secondary-foreground hover:bg-accent hover:text-amber-500'}`}
+          title="VS Challenge"
+        >
+          <Swords className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">VS</span>
+        </button>
+      )}
       <button
         onClick={onSoundToggle}
         className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded-sm transition-all duration-200

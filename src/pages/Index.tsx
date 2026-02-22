@@ -8,6 +8,7 @@ import ResultsPanel from '@/components/ResultsPanel';
 import HistoryPanel from '@/components/HistoryPanel';
 import KeyboardHeatmap from '@/components/KeyboardHeatmap';
 import KeyboardPreview from '@/components/KeyboardPreview';
+import VsChallenge from '@/components/VsChallenge';
 import { useTypingGame } from '@/hooks/useTypingGame';
 import { useLocalStats } from '@/hooks/useLocalStats';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
@@ -33,6 +34,7 @@ const Index = () => {
   });
   const [showHistory, setShowHistory] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showVs, setShowVs] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(() => {
     try { return localStorage.getItem('keysfingers_keyboard') !== 'false'; } catch { return true; }
   });
@@ -213,11 +215,13 @@ const Index = () => {
         onHistoryToggle={() => {
           setShowHistory(p => !p);
           setShowHeatmap(false);
+          setShowVs(false);
         }}
         showHeatmap={showHeatmap}
         onHeatmapToggle={() => {
           setShowHeatmap(p => !p);
           setShowHistory(false);
+          setShowVs(false);
         }}
         showKeyboard={showKeyboard}
         onKeyboardToggle={() => {
@@ -229,10 +233,18 @@ const Index = () => {
         }}
         darkMode={darkMode}
         onDarkModeToggle={() => setDarkMode(p => !p)}
+        showVs={showVs}
+        onVsToggle={() => {
+          setShowVs(p => !p);
+          setShowHistory(false);
+          setShowHeatmap(false);
+        }}
       />
 
       <main className="flex-1 container mx-auto px-4 py-1 lg:py-2 max-w-7xl">
-        {showHistory ? (
+        {showVs ? (
+          <VsChallenge onExit={() => setShowVs(false)} soundEnabled={soundEnabled} />
+        ) : showHistory ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto py-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold font-mono glitch-text" data-text="Typing History">
