@@ -536,3 +536,17 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
+
+@keyframes skeleton-shine {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.animate-skeleton-shine {
+  animation: skeleton-shine 1.5s infinite;
+}

@@ -59,6 +59,7 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
     const [myFinishData, setMyFinishData] = useState<PlayerProgress | null>(null);
     const [nameInput, setNameInput] = useState('');
     const [loadingReward, setLoadingReward] = useState(false);
+    const [imageLoaded, setImageLoaded] = useState(false);
 
     const activeText = challengeText ?? '';
     const { stats, userInput, handleInput, reset, targetText } = useTypingGame(activeText);
@@ -661,17 +662,22 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                                     </p>
                                 </div>
 
-                                <div className="relative aspect-[4/5] sm:aspect-video w-full max-w-sm mx-auto rounded-lg overflow-hidden border border-border shadow-2xl bg-muted">
-                                    {loadingReward || !rewardUrl ? (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                                            <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                                            <span className="text-[10px] font-mono text-muted-foreground">SUMMONING WAIFU...</span>
+                                <div className="relative aspect-[4/5] sm:aspect-video w-full max-w-sm mx-auto rounded-lg overflow-hidden border border-border shadow-2xl bg-muted group">
+                                    {(loadingReward || !rewardUrl || !imageLoaded) && (
+                                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-muted">
+                                            {/* Skeleton animation */}
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-skeleton-shine" />
+                                            <Loader2 className="h-8 w-8 text-primary animate-spin relative z-20" />
+                                            <span className="text-[10px] font-mono text-muted-foreground animate-pulse relative z-20">SUMMONING WAIFU...</span>
                                         </div>
-                                    ) : (
+                                    )}
+                                    {rewardUrl && (
                                         <img
                                             src={rewardUrl}
                                             alt="Waifu Reward"
-                                            className="w-full h-full object-contain sm:object-cover animate-in fade-in duration-1000"
+                                            onLoad={() => setImageLoaded(true)}
+                                            className={`w-full h-full object-contain sm:object-cover transition-all duration-1000 ${imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-110'
+                                                }`}
                                         />
                                     )}
                                 </div>

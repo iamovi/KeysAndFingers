@@ -14,7 +14,7 @@ import { useLocalStats } from '@/hooks/useLocalStats';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { useHistory } from '@/hooks/useHistory';
 import { getRandomText, getTextCount } from '@/data/texts';
-import { RotateCcw, Shuffle, ClipboardPaste, Palette } from 'lucide-react';
+import { RotateCcw, Shuffle, ClipboardPaste, Palette, Swords, Grid3X3, Sparkles, Zap } from 'lucide-react';
 import ThemeCustomizer, { CustomThemeSettings } from '@/components/ThemeCustomizer';
 
 const Index = () => {
@@ -37,6 +37,7 @@ const Index = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showVs, setShowVs] = useState(false);
+  const [showBattleIntro, setShowBattleIntro] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(() => {
     const saved = localStorage.getItem('keysfingers_keyboard');
     return saved !== null ? saved === 'true' : true;
@@ -324,12 +325,142 @@ const Index = () => {
         onThemeChange={setTheme}
         showVs={showVs}
         onVsToggle={() => {
-          setShowVs(p => !p);
+          const enteringVs = !showVs;
+          setShowVs(enteringVs);
           setShowHistory(false);
           setShowHeatmap(false);
+
+          if (enteringVs) {
+            setShowBattleIntro(true);
+          }
         }}
         onCustomizerToggle={() => setShowCustomizer(true)}
       />
+
+      {showBattleIntro && (
+        <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-start lg:justify-center bg-black/95 backdrop-blur-xl animate-in fade-in duration-500 p-3 sm:p-6 overflow-y-auto">
+          <div className="flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12 max-w-7xl w-full py-4 lg:py-8">
+
+            {/* Left Info Panel */}
+            <div className="w-full lg:w-72 order-2 lg:order-1 space-y-4 lg:space-y-6 animate-in slide-in-from-left duration-700 delay-200">
+              <div className="space-y-1 lg:space-y-2 border-l-2 border-amber-500 pl-4 py-1 lg:py-2 bg-amber-500/5">
+                <h3 className="text-amber-500 font-mono font-bold uppercase tracking-[0.2em] text-[10px] lg:text-sm">Rules of Combat</h3>
+                <p className="text-[10px] lg:text-[11px] font-mono text-muted-foreground leading-relaxed">
+                  Fastest finish wins. Speed & precision are key.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 lg:gap-4">
+                <div className="group p-2 lg:p-3 border border-border bg-secondary/20 rounded hover:border-amber-500/50 transition-colors">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Swords className="h-3 w-3 lg:h-3.5 lg:w-3.5 text-amber-500" />
+                    <span className="text-[9px] lg:text-[10px] font-mono font-bold uppercase tracking-wider">Sync</span>
+                  </div>
+                  <p className="text-[8px] lg:text-[9px] font-mono text-muted-foreground">Real-time progress.</p>
+                </div>
+
+                <div className="group p-2 lg:p-3 border border-border bg-secondary/20 rounded hover:border-amber-500/50 transition-colors">
+                  <div className="flex items-center gap-2 mb-1 text-sky-400">
+                    <Grid3X3 className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
+                    <span className="text-[9px] lg:text-[10px] font-mono font-bold uppercase tracking-wider">Rooms</span>
+                  </div>
+                  <p className="text-[8px] lg:text-[9px] font-mono text-muted-foreground">Challenge friends.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Central GIF & Action Box */}
+            <div className="relative order-1 lg:order-2 w-full max-w-2xl">
+              <div className="relative overflow-hidden rounded-xl lg:rounded-2xl border-2 lg:border-4 border-amber-500 shadow-[0_0_40px_rgba(245,158,11,0.3)] lg:shadow-[0_0_80px_rgba(245,158,11,0.4)] bg-black">
+                <img
+                  src={`battle.gif?t=${Date.now()}`}
+                  alt="BATTLE START"
+                  className="w-full h-auto max-h-[40vh] lg:max-h-full object-contain opacity-80"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black flex flex-col justify-between p-4 lg:p-10">
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col gap-0 lg:gap-1">
+                      <div className="px-2 lg:px-3 py-0.5 lg:py-1 bg-amber-500 text-black text-[8px] lg:text-[10px] font-mono font-black uppercase tracking-[0.2em] lg:tracking-[0.3em] skew-x-[-12deg]">
+                        CHALLENGE
+                      </div>
+                      <div className="text-[8px] lg:text-[9px] font-mono text-amber-500/80 tracking-widest uppercase mt-0.5 lg:mt-1">
+                        status: ready
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center items-center flex-col gap-4 lg:gap-8">
+                    <div className="text-center">
+                      <h1 className="text-4xl lg:text-8xl font-mono font-black italic uppercase tracking-tighter text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.6)] animate-pulse mb-1 lg:mb-2">
+                        VERSUS
+                      </h1>
+                      <div className="flex items-center justify-center gap-2 lg:gap-4 text-amber-500 font-mono text-[8px] lg:text-[10px] tracking-[0.3em] lg:tracking-[0.5em] font-bold">
+                        <span className="w-4 lg:w-8 h-[1px] bg-amber-500/30"></span>
+                        ENGAGE
+                        <span className="w-4 lg:w-8 h-[1px] bg-amber-500/30"></span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setShowBattleIntro(false)}
+                      className="group relative px-8 lg:px-16 py-3 lg:py-5 bg-amber-500 hover:bg-amber-400 text-black font-mono font-black text-xl lg:text-3xl uppercase tracking-[0.1em] lg:tracking-[0.2em] skew-x-[-12deg] transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(245,158,11,0.5)] lg:shadow-[0_0_40px_rgba(245,158,11,0.7)]"
+                    >
+                      <span className="relative z-10 flex items-center gap-2 lg:gap-3">
+                        GO! <Swords className="h-4 w-4 lg:h-6 lg:w-6" />
+                      </span>
+                      <div className="absolute inset-0 bg-white/30 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
+                    </button>
+                  </div>
+
+                  <div className="flex justify-between items-end">
+                    <div className="text-[8px] lg:text-[9px] font-mono text-muted-foreground uppercase vertical-text tracking-widest hidden sm:block">
+                      v2.0
+                    </div>
+                    <div className="px-2 lg:px-3 py-0.5 lg:py-1 bg-amber-500 text-black text-[8px] lg:text-[10px] font-mono font-black uppercase tracking-[0.2em] lg:tracking-[0.3em] skew-x-[-12deg]">
+                      FIGHT!
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Info Panel */}
+            <div className="w-full lg:w-72 order-3 space-y-4 lg:space-y-6 animate-in slide-in-from-right duration-700 delay-200">
+              <div className="space-y-1 lg:space-y-2 border-r-2 border-amber-500 pr-4 py-1 lg:py-2 bg-amber-500/5 text-right">
+                <h3 className="text-amber-500 font-mono font-bold uppercase tracking-[0.2em] text-[10px] lg:text-sm">Rewards</h3>
+                <p className="text-[10px] lg:text-[11px] font-mono text-muted-foreground leading-relaxed">
+                  Victory grants the legendary spoils.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 lg:gap-4">
+                <div className="group p-2 lg:p-3 border border-border bg-secondary/20 rounded hover:border-amber-500/50 transition-colors text-right">
+                  <div className="flex items-center justify-end gap-2 mb-1 text-pink-500">
+                    <span className="text-[9px] lg:text-[10px] font-mono font-bold uppercase tracking-wider">Art</span>
+                    <Sparkles className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
+                  </div>
+                  <p className="text-[8px] lg:text-[9px] font-mono text-muted-foreground">Unlock spoils.</p>
+                </div>
+
+                <div className="group p-2 lg:p-3 border border-border bg-secondary/20 rounded hover:border-amber-500/50 transition-colors text-right">
+                  <div className="flex items-center justify-end gap-2 mb-1 text-amber-500">
+                    <span className="text-[9px] lg:text-[10px] font-mono font-bold uppercase tracking-wider">Items</span>
+                    <Zap className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
+                  </div>
+                  <p className="text-[8px] lg:text-[9px] font-mono text-muted-foreground">Coming soon.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="mt-4 lg:mt-8 text-center animate-in fade-in duration-1000 delay-500">
+            <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.4em] animate-pulse">
+              [ WAITING ]
+            </p>
+          </div>
+        </div>
+      )}
 
       {showCustomizer && (
         <ThemeCustomizer
