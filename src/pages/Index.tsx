@@ -40,17 +40,26 @@ const Index = () => {
     const saved = localStorage.getItem('keysfingers_keyboard');
     return saved !== null ? saved === 'true' : true;
   });
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('keysfingers_dark');
-    if (saved !== null) return saved === 'true';
-    return document.documentElement.classList.contains('dark');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midnight' | 'nord' | 'aurora' | 'animate'>(() => {
+    const saved = localStorage.getItem('keysfingers_theme');
+    if (saved) return saved as any;
+    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
   });
 
-  // Apply dark mode class
+  // Apply theme class
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
-    localStorage.setItem('keysfingers_dark', String(darkMode));
-  }, [darkMode]);
+    const root = document.documentElement;
+    root.classList.remove('dark', 'theme-matrix', 'theme-cyberpink', 'theme-retro', 'theme-midnight', 'theme-nord', 'theme-aurora', 'theme-animate');
+
+    if (theme !== 'light') {
+      root.classList.add('dark');
+      if (theme !== 'dark') {
+        root.classList.add(`theme-${theme}`);
+      }
+    }
+
+    localStorage.setItem('keysfingers_theme', theme);
+  }, [theme]);
 
   const { stats, userInput, handleInput, reset, targetText } = useTypingGame(currentText.text);
   const { personalBest, streak, saveResult } = useLocalStats();
@@ -231,8 +240,8 @@ const Index = () => {
           setShowKeyboard(next);
           localStorage.setItem('keysfingers_keyboard', String(next));
         }}
-        darkMode={darkMode}
-        onDarkModeToggle={() => setDarkMode(p => !p)}
+        theme={theme}
+        onThemeChange={setTheme}
         showVs={showVs}
         onVsToggle={() => {
           setShowVs(p => !p);

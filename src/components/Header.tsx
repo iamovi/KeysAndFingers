@@ -1,5 +1,13 @@
-import { useState, useEffect } from 'react';
-import { Keyboard, Volume2, VolumeX, History, Grid3X3, Menu, X, Monitor, Sun, Moon, Swords } from 'lucide-react';
+import { useState } from 'react';
+import { Zap, Sparkles, Waves, Palette, Keyboard, Volume2, VolumeX, History, Grid3X3, Menu, X, Monitor, Sun, Moon, Swords, Check } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface HeaderProps {
   soundEnabled: boolean;
@@ -10,11 +18,23 @@ interface HeaderProps {
   onHeatmapToggle: () => void;
   showKeyboard: boolean;
   onKeyboardToggle: () => void;
-  darkMode: boolean;
-  onDarkModeToggle: () => void;
+  theme: 'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midnight' | 'nord' | 'aurora' | 'animate';
+  onThemeChange: (theme: 'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midnight' | 'nord' | 'aurora' | 'animate') => void;
   showVs?: boolean;
   onVsToggle?: () => void;
 }
+
+const THEMES: { id: 'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midnight' | 'nord' | 'aurora' | 'animate', name: string, icon: React.ReactNode, color: string, isAnimated?: boolean }[] = [
+  { id: 'light', name: 'Light', icon: <Sun className="h-4 w-4" />, color: 'text-foreground' },
+  { id: 'dark', name: 'Dark', icon: <Moon className="h-4 w-4" />, color: 'text-foreground' },
+  { id: 'matrix', name: 'Matrix', icon: <Palette className="h-4 w-4" />, color: 'text-[#00ff41]' },
+  { id: 'cyberpink', name: 'Cyberpink', icon: <Palette className="h-4 w-4" />, color: 'text-[#ff00ff]' },
+  { id: 'retro', name: 'Retro', icon: <Palette className="h-4 w-4" />, color: 'text-[#ffb000]' },
+  { id: 'midnight', name: 'Midnight', icon: <Moon className="h-4 w-4" />, color: 'text-[#3b82f6]' },
+  { id: 'nord', name: 'Nord', icon: <Palette className="h-4 w-4" />, color: 'text-[#88c0d0]' },
+  { id: 'aurora', name: 'Aurora', icon: <Sparkles className="h-4 w-4 animate-pulse" />, color: 'text-[#00ff9f]', isAnimated: true },
+  { id: 'animate', name: 'Animate', icon: <Zap className="h-4 w-4 animate-bounce" style={{ animationDuration: '2s' }} />, color: 'text-primary', isAnimated: true },
+];
 
 const Header = ({
   soundEnabled,
@@ -25,12 +45,18 @@ const Header = ({
   onHeatmapToggle,
   showKeyboard,
   onKeyboardToggle,
-  darkMode,
-  onDarkModeToggle,
+  theme,
+  onThemeChange,
   showVs,
   onVsToggle,
 }: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const getThemeIcon = () => {
+    const current = THEMES.find(t => t.id === theme);
+    const Icon = current?.icon || <Palette className="h-3.5 w-3.5" />;
+    return <span className={current?.color}>{Icon}</span>;
+  };
 
   const toggleButtons = (
     <>
@@ -81,14 +107,35 @@ const Header = ({
         <Monitor className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Keyboard</span>
       </button>
-      <button
-        onClick={onDarkModeToggle}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded-sm bg-secondary text-secondary-foreground hover:bg-accent transition-all duration-200"
-        title={darkMode ? 'Light mode' : 'Dark mode'}
-      >
-        {darkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-        <span className="hidden sm:inline">{darkMode ? 'Light' : 'Dark'}</span>
-      </button>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded-sm bg-secondary text-secondary-foreground hover:bg-accent transition-all duration-200"
+            title="Choose theme"
+          >
+            {getThemeIcon()}
+            <span className="hidden sm:inline uppercase">{theme}</span>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="bg-popover border-border min-w-[150px]">
+          <DropdownMenuLabel className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Select Theme</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {THEMES.map((t) => (
+            <DropdownMenuItem
+              key={t.id}
+              onClick={() => onThemeChange(t.id)}
+              className="flex items-center justify-between gap-2 cursor-pointer font-mono text-xs"
+            >
+              <div className="flex items-center gap-2">
+                <span className={t.color}>{t.icon}</span>
+                {t.name}
+              </div>
+              {theme === t.id && <Check className="h-3 w-3 text-primary" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </>
   );
 

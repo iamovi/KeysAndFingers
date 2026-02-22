@@ -59,6 +59,166 @@
     --input: 0 0% 16%;
     --ring: 0 0% 92%;
   }
+
+  .theme-matrix {
+    --background: 120 100% 2%;
+    --foreground: 120 100% 50%;
+    --card: 120 100% 3%;
+    --card-foreground: 120 100% 50%;
+    --popover: 120 100% 3%;
+    --popover-foreground: 120 100% 50%;
+    --primary: 120 100% 50%;
+    --primary-foreground: 120 100% 2%;
+    --secondary: 120 100% 8%;
+    --secondary-foreground: 120 100% 50%;
+    --muted: 120 100% 8%;
+    --muted-foreground: 120 100% 30%;
+    --accent: 120 100% 12%;
+    --accent-foreground: 120 100% 70%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 120 100% 50%;
+    --success-foreground: 0 0% 0%;
+    --warning: 60 100% 50%;
+    --warning-foreground: 0 0% 0%;
+    --border: 120 100% 15%;
+    --input: 120 100% 15%;
+    --ring: 120 100% 50%;
+  }
+
+  .theme-cyberpink {
+    --background: 260 100% 3%;
+    --foreground: 300 100% 60%;
+    --card: 260 100% 5%;
+    --card-foreground: 300 100% 60%;
+    --popover: 260 100% 5%;
+    --popover-foreground: 300 100% 60%;
+    --primary: 320 100% 50%;
+    --primary-foreground: 260 100% 3%;
+    --secondary: 260 100% 10%;
+    --secondary-foreground: 300 100% 70%;
+    --muted: 260 100% 10%;
+    --muted-foreground: 300 40% 40%;
+    --accent: 320 100% 20%;
+    --accent-foreground: 300 100% 80%;
+    --destructive: 350 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 180 100% 50%;
+    --success-foreground: 260 100% 3%;
+    --warning: 45 100% 50%;
+    --warning-foreground: 260 100% 3%;
+    --border: 300 100% 20%;
+    --input: 300 100% 20%;
+    --ring: 320 100% 50%;
+  }
+
+  .theme-retro {
+    --background: 0 0% 10%;
+    --foreground: 45 100% 50%;
+    --card: 0 0% 12%;
+    --card-foreground: 45 100% 50%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 45 100% 50%;
+    --primary: 45 100% 50%;
+    --primary-foreground: 0 0% 10%;
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 45 100% 60%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 45 50% 30%;
+    --accent: 45 100% 20%;
+    --accent-foreground: 45 100% 80%;
+    --destructive: 0 100% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 120 70% 40%;
+    --success-foreground: 0 0% 10%;
+    --warning: 35 100% 45%;
+    --warning-foreground: 0 0% 10%;
+    --border: 45 100% 15%;
+    --input: 45 100% 15%;
+    --ring: 45 100% 50%;
+  }
+
+  .theme-midnight {
+    --background: 222 47% 4%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 7%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 7%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 222 47% 12%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 47% 15%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 91% 25%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --success: 142 70% 50%;
+    --success-foreground: 222 47% 4%;
+    --warning: 48 96% 53%;
+    --warning-foreground: 222 47% 4%;
+    --border: 222 47% 20%;
+    --input: 222 47% 20%;
+    --ring: 217 91% 60%;
+  }
+
+  .theme-nord {
+    --background: 220 16% 22%;
+    --foreground: 218 27% 92%;
+    --card: 220 16% 25%;
+    --card-foreground: 218 27% 92%;
+    --popover: 220 16% 25%;
+    --popover-foreground: 218 27% 92%;
+    --primary: 193 43% 67%;
+    --primary-foreground: 220 16% 22%;
+    --secondary: 220 16% 30%;
+    --secondary-foreground: 218 27% 92%;
+    --muted: 220 16% 35%;
+    --muted-foreground: 218 10% 60%;
+    --accent: 193 43% 30%;
+    --accent-foreground: 218 27% 92%;
+    --border: 220 16% 35%;
+    --input: 220 16% 35%;
+    --ring: 193 43% 67%;
+  }
+
+  /* Animated Themes */
+  .theme-aurora {
+    --background: 160 100% 2%;
+    --foreground: 160 100% 60%;
+    --card: 160 100% 4%;
+    --card-foreground: 160 100% 60%;
+    --primary: 180 100% 50%;
+    --primary-foreground: 160 100% 2%;
+    --secondary: 160 100% 8%;
+    --secondary-foreground: 160 100% 70%;
+    --border: 160 100% 15%;
+    --ring: 180 100% 50%;
+    background: linear-gradient(-45deg, #001a12, #002e24, #001a2e, #0e002e);
+    background-size: 400% 400%;
+    animation: gradient-shift 15s ease infinite !important;
+  }
+
+  .theme-animate {
+    --background: 280 20% 4%;
+    --foreground: 280 80% 90%;
+    --card: 280 20% 7%;
+    --card-foreground: 280 80% 90%;
+    --primary: 280 100% 60%;
+    --primary-foreground: 280 100% 10%;
+    --secondary: 280 30% 15%;
+    --secondary-foreground: 280 100% 80%;
+    --muted: 280 20% 15%;
+    --muted-foreground: 280 40% 60%;
+    --accent: 280 50% 25%;
+    --accent-foreground: 280 100% 90%;
+    --border: 280 50% 20%;
+    --input: 280 50% 20%;
+    --ring: 280 100% 60%;
+    animation: rainbow-hue 10s linear infinite !important;
+  }
 }
 
 @layer base {
@@ -68,6 +228,30 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@keyframes rainbow-hue {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
   }
 }
 
@@ -279,10 +463,12 @@
     transform: scale(0.3);
     opacity: 0;
   }
+
   50% {
     transform: scale(1.2);
     opacity: 1;
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
@@ -294,9 +480,12 @@
 }
 
 @keyframes vs-winner-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 15px rgba(245, 158, 11, 0.2), 0 0 30px rgba(245, 158, 11, 0.1);
   }
+
   50% {
     box-shadow: 0 0 25px rgba(245, 158, 11, 0.4), 0 0 50px rgba(245, 158, 11, 0.2);
   }
