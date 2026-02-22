@@ -14,7 +14,8 @@ import { useLocalStats } from '@/hooks/useLocalStats';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { useHistory } from '@/hooks/useHistory';
 import { getRandomText, getTextCount } from '@/data/texts';
-import { RotateCcw, Shuffle, ClipboardPaste } from 'lucide-react';
+import { RotateCcw, Shuffle, ClipboardPaste, Palette } from 'lucide-react';
+import ThemeCustomizer, { CustomThemeSettings } from '@/components/ThemeCustomizer';
 
 const Index = () => {
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'custom'>('medium');
@@ -40,26 +41,105 @@ const Index = () => {
     const saved = localStorage.getItem('keysfingers_keyboard');
     return saved !== null ? saved === 'true' : true;
   });
-  const [theme, setTheme] = useState<'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midnight' | 'nord' | 'aurora' | 'animate'>(() => {
+  const [theme, setTheme] = useState<'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midnight' | 'nord' | 'aurora' | 'animate' | 'custom'>(() => {
     const saved = localStorage.getItem('keysfingers_theme');
     if (saved) return saved as any;
     return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
   });
 
+  const [showCustomizer, setShowCustomizer] = useState(false);
+  const [customThemeSettings, setCustomThemeSettings] = useState<CustomThemeSettings | undefined>(() => {
+    const saved = localStorage.getItem('kf_custom_theme_settings');
+    return saved ? JSON.parse(saved) : undefined;
+  });
+
   // Apply theme class
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-matrix', 'theme-cyberpink', 'theme-retro', 'theme-midnight', 'theme-nord', 'theme-aurora', 'theme-animate');
+    root.classList.remove('dark', 'theme-matrix', 'theme-cyberpink', 'theme-retro', 'theme-midnight', 'theme-nord', 'theme-aurora', 'theme-animate', 'theme-custom');
 
-    if (theme !== 'light') {
-      root.classList.add('dark');
-      if (theme !== 'dark') {
-        root.classList.add(`theme-${theme}`);
+    const hexToHsl = (hex: string): string => {
+      if (!hex || typeof hex !== 'string') return '0 0% 0%';
+      let r = 0, g = 0, b = 0;
+      if (hex.length === 4) {
+        r = parseInt(hex[1] + hex[1], 16);
+        g = parseInt(hex[2] + hex[2], 16);
+        b = parseInt(hex[3] + hex[3], 16);
+      } else if (hex.length === 7) {
+        r = parseInt(hex.substring(1, 3), 16);
+        g = parseInt(hex.substring(3, 5), 16);
+        b = parseInt(hex.substring(5, 7), 16);
+      } else {
+        return '0 0% 0%';
+      }
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h = 0, s = 0, l = (max + min) / 2;
+      if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+      return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+    };
+
+    if (theme === 'custom' && customThemeSettings) {
+      root.classList.add('dark', 'theme-custom');
+      root.style.setProperty('--custom-background', hexToHsl(customThemeSettings.background || '#0a0a0a'));
+      root.style.setProperty('--custom-foreground', hexToHsl(customThemeSettings.foreground || '#e5e5e5'));
+      root.style.setProperty('--custom-primary', hexToHsl(customThemeSettings.primary || '#3b82f6'));
+      root.style.setProperty('--custom-secondary', hexToHsl(customThemeSettings.secondary || '#1a1a1a'));
+      root.style.setProperty('--custom-accent', hexToHsl(customThemeSettings.accent || '#2563eb'));
+      root.style.setProperty('--custom-border', hexToHsl(customThemeSettings.border || '#262626'));
+      root.style.setProperty('--custom-error', hexToHsl(customThemeSettings.error || '#ef4444'));
+      root.style.setProperty('--custom-caret', hexToHsl(customThemeSettings.caret || '#3b82f6'));
+      root.style.setProperty('--custom-font', customThemeSettings.font || 'JetBrains Mono');
+      root.style.setProperty('--custom-font-size', `${customThemeSettings.fontSize || 16}px`);
+      root.style.setProperty('--custom-letter-spacing', `${customThemeSettings.letterSpacing || 0}px`);
+      root.style.setProperty('--custom-blur', `${customThemeSettings.blur || 0}px`);
+
+      // Load font if it's a Google Font
+      const googleFonts = ['JetBrains Mono', 'Space Grotesk', 'Inter', 'Roboto Mono'];
+      const selectedFont = customThemeSettings.font || 'JetBrains Mono';
+      if (googleFonts.includes(selectedFont)) {
+        const fontId = `google-font-${selectedFont.replace(/\s+/g, '-').toLowerCase()}`;
+        if (!document.getElementById(fontId)) {
+          const link = document.createElement('link');
+          link.id = fontId;
+          link.href = `https://fonts.googleapis.com/css2?family=${selectedFont.replace(/\s+/g, '+')}:wght@400;700&display=swap`;
+          link.rel = 'stylesheet';
+          document.head.appendChild(link);
+        }
+      }
+    } else {
+      root.style.removeProperty('--custom-error');
+      root.style.removeProperty('--custom-caret');
+      root.style.removeProperty('--custom-font-size');
+      root.style.removeProperty('--custom-letter-spacing');
+      root.style.removeProperty('--custom-blur');
+      root.style.removeProperty('--custom-background');
+      root.style.removeProperty('--custom-foreground');
+      root.style.removeProperty('--custom-primary');
+      root.style.removeProperty('--custom-secondary');
+      root.style.removeProperty('--custom-accent');
+      root.style.removeProperty('--custom-border');
+      root.style.removeProperty('--custom-font');
+
+      if (theme !== 'light') {
+        root.classList.add('dark');
+        if (theme !== 'dark') {
+          root.classList.add(`theme-${theme}`);
+        }
       }
     }
 
     localStorage.setItem('keysfingers_theme', theme);
-  }, [theme]);
+  }, [theme, customThemeSettings]);
 
   const { stats, userInput, handleInput, reset, targetText } = useTypingGame(currentText.text);
   const { personalBest, streak, saveResult } = useLocalStats();
@@ -248,7 +328,20 @@ const Index = () => {
           setShowHistory(false);
           setShowHeatmap(false);
         }}
+        onCustomizerToggle={() => setShowCustomizer(true)}
       />
+
+      {showCustomizer && (
+        <ThemeCustomizer
+          onClose={() => setShowCustomizer(false)}
+          onSave={(settings) => {
+            setCustomThemeSettings(settings);
+            localStorage.setItem('kf_custom_theme_settings', JSON.stringify(settings));
+            setTheme('custom');
+          }}
+          initialSettings={customThemeSettings}
+        />
+      )}
 
       <main className="flex-1 container mx-auto px-4 py-1 lg:py-2 max-w-7xl">
         {showVs ? (

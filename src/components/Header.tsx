@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, Sparkles, Waves, Palette, Keyboard, Volume2, VolumeX, History, Grid3X3, Menu, X, Monitor, Sun, Moon, Swords, Check } from 'lucide-react';
+import { Settings2, Zap, Sparkles, Waves, Palette, Keyboard, Volume2, VolumeX, History, Grid3X3, Menu, X, Monitor, Sun, Moon, Swords, Check } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,13 +18,14 @@ interface HeaderProps {
   onHeatmapToggle: () => void;
   showKeyboard: boolean;
   onKeyboardToggle: () => void;
-  theme: 'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midnight' | 'nord' | 'aurora' | 'animate';
-  onThemeChange: (theme: 'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midnight' | 'nord' | 'aurora' | 'animate') => void;
+  theme: 'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midnight' | 'nord' | 'aurora' | 'animate' | 'custom';
+  onThemeChange: (theme: 'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midnight' | 'nord' | 'aurora' | 'animate' | 'custom') => void;
   showVs?: boolean;
   onVsToggle?: () => void;
+  onCustomizerToggle: () => void;
 }
 
-const THEMES: { id: 'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midnight' | 'nord' | 'aurora' | 'animate', name: string, icon: React.ReactNode, color: string, isAnimated?: boolean }[] = [
+const THEMES: { id: 'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midnight' | 'nord' | 'aurora' | 'animate' | 'custom', name: string, icon: React.ReactNode, color: string, isAnimated?: boolean }[] = [
   { id: 'light', name: 'Light', icon: <Sun className="h-4 w-4" />, color: 'text-foreground' },
   { id: 'dark', name: 'Dark', icon: <Moon className="h-4 w-4" />, color: 'text-foreground' },
   { id: 'matrix', name: 'Matrix', icon: <Palette className="h-4 w-4" />, color: 'text-[#00ff41]' },
@@ -34,6 +35,7 @@ const THEMES: { id: 'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midni
   { id: 'nord', name: 'Nord', icon: <Palette className="h-4 w-4" />, color: 'text-[#88c0d0]' },
   { id: 'aurora', name: 'Aurora', icon: <Sparkles className="h-4 w-4 animate-pulse" />, color: 'text-[#00ff9f]', isAnimated: true },
   { id: 'animate', name: 'Animate', icon: <Zap className="h-4 w-4 animate-bounce" style={{ animationDuration: '2s' }} />, color: 'text-primary', isAnimated: true },
+  { id: 'custom', name: 'Custom', icon: <Settings2 className="h-4 w-4" />, color: 'text-primary' },
 ];
 
 const Header = ({
@@ -49,6 +51,7 @@ const Header = ({
   onThemeChange,
   showVs,
   onVsToggle,
+  onCustomizerToggle,
 }: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -118,8 +121,20 @@ const Header = ({
             <span className="hidden sm:inline uppercase">{theme}</span>
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="bg-popover border-border min-w-[150px]">
-          <DropdownMenuLabel className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Select Theme</DropdownMenuLabel>
+        <DropdownMenuContent align="end" className="bg-popover border-border min-w-[180px]">
+          <DropdownMenuLabel className="flex items-center justify-between px-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            Select Theme
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onCustomizerToggle();
+              }}
+              className="p-1 hover:bg-secondary rounded-sm transition-colors text-primary"
+              title="Customize Theme"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+            </button>
+          </DropdownMenuLabel>
           <DropdownMenuSeparator />
           {THEMES.map((t) => (
             <DropdownMenuItem
@@ -131,7 +146,20 @@ const Header = ({
                 <span className={t.color}>{t.icon}</span>
                 {t.name}
               </div>
-              {theme === t.id && <Check className="h-3 w-3 text-primary" />}
+              <div className="flex items-center gap-1">
+                {t.id === 'custom' && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onCustomizerToggle();
+                    }}
+                    className="p-1 hover:bg-accent rounded-sm opacity-50 hover:opacity-100 transition-all"
+                  >
+                    <Settings2 className="h-3 w-3" />
+                  </button>
+                )}
+                {theme === t.id && <Check className="h-3 w-3 text-primary" />}
+              </div>
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>

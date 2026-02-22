@@ -219,6 +219,39 @@
     --ring: 280 100% 60%;
     animation: rainbow-hue 10s linear infinite !important;
   }
+
+  .theme-custom {
+    --background: var(--custom-background, 0 0% 4%);
+    --foreground: var(--custom-foreground, 0 0% 92%);
+    --card: var(--custom-card, 0 0% 7%);
+    --card-foreground: var(--custom-foreground, 0 0% 92%);
+    --popover: var(--custom-card, 0 0% 7%);
+    --popover-foreground: var(--custom-foreground, 0 0% 92%);
+    --primary: var(--custom-primary, 0 0% 92%);
+    --primary-foreground: var(--custom-background, 0 0% 4%);
+    --secondary: var(--custom-secondary, 0 0% 12%);
+    --secondary-foreground: var(--custom-foreground, 0 0% 92%);
+    --muted: var(--custom-secondary, 0 0% 12%);
+    --muted-foreground: var(--custom-foreground, 0 0% 50%);
+    --accent: var(--custom-accent, 0 0% 15%);
+    --accent-foreground: var(--custom-foreground, 0 0% 92%);
+    --border: var(--custom-border, 0 0% 16%);
+    --input: var(--custom-border, 0 0% 16%);
+    --ring: var(--custom-primary, 0 0% 92%);
+    --destructive: var(--custom-error, 0 100% 50%);
+    --caret: var(--custom-caret, var(--primary));
+    font-family: var(--custom-font, var(--font-mono)) !important;
+
+    /* Override font-sans and font-mono if possible */
+    --font-sans: var(--custom-font, var(--font-mono));
+    --font-mono: var(--custom-font, var(--font-mono));
+
+    font-size: var(--custom-font-size, 1rem);
+    letter-spacing: var(--custom-letter-spacing, normal);
+
+    /* Glassmorphism support */
+    backdrop-filter: blur(var(--custom-blur, 0px));
+  }
 }
 
 @layer base {
