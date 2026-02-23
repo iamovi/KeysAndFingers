@@ -190,14 +190,26 @@ export const useGCLobby = (playerName: string | null) => {
         channel.on('presence', { event: 'join' }, ({ key, newPresences }: { key: string; newPresences: GCPresence[] }) => {
             const presence = newPresences[0];
             if (key !== myId.current && presence?.name) {
-                addSystemMessage(`${presence.name} joined the lobby`);
+                // Only show joined message if they weren't already in the presence state
+                const currentState = channel.presenceState<GCPresence>();
+                const alreadyPresent = Object.keys(currentState).filter(k => k !== key).length > 0
+                    ? key in currentState && (currentState[key]?.length ?? 0) > 1
+                    : false;
+                if (!alreadyPresent) {
+                    addSystemMessage(`${presence.name} joined the lobby`);
+                }
             }
         });
 
         channel.on('presence', { event: 'leave' }, ({ key, leftPresences }: { key: string; leftPresences: GCPresence[] }) => {
             const presence = leftPresences[0];
             if (key !== myId.current && presence?.name) {
-                addSystemMessage(`${presence.name} left the lobby`);
+                // Only show left message if they are fully gone from presence state
+                const currentState = channel.presenceState<GCPresence>();
+                const stillPresent = key in currentState && (currentState[key]?.length ?? 0) > 0;
+                if (!stillPresent) {
+                    addSystemMessage(`${presence.name} left the lobby`);
+                }
             }
         });
 
