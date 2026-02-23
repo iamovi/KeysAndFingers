@@ -24,6 +24,8 @@ interface HeaderProps {
   onVsToggle?: () => void;
   showGC?: boolean;
   onGCToggle?: () => void;
+  showAbout: boolean;
+  onAboutToggle: () => void;
   onCustomizerToggle: () => void;
 }
 
@@ -55,6 +57,8 @@ const Header = ({
   onVsToggle,
   showGC,
   onGCToggle,
+  showAbout,
+  onAboutToggle,
   onCustomizerToggle,
 }: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -124,6 +128,16 @@ const Header = ({
       >
         <Monitor className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Keyboard</span>
+      </button>
+
+      <button
+        onClick={onAboutToggle}
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded-sm transition-all duration-200
+          ${showAbout ? 'bg-foreground text-background' : 'bg-secondary text-secondary-foreground hover:bg-accent'}`}
+        title="About the project"
+      >
+        <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+        <span className="hidden sm:inline">About</span>
       </button>
 
       <DropdownMenu>

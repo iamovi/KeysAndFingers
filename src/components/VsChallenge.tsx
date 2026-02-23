@@ -23,6 +23,7 @@ import {
 interface VsChallengeProps {
     onExit: () => void;
     soundEnabled: boolean;
+    onPlayerNameChange?: (name: string) => void;
 }
 
 type RaceMetrics = Pick<PlayerProgress, 'wpm' | 'accuracy' | 'correctChars' | 'elapsedTime'>;
@@ -34,7 +35,7 @@ const compareRaceMetrics = (left: RaceMetrics, right: RaceMetrics) => {
     return left.wpm - right.wpm;
 };
 
-const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
+const VsChallenge = ({ onExit, soundEnabled, onPlayerNameChange }: VsChallengeProps) => {
     const {
         phase,
         roomCode,
@@ -213,6 +214,7 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         e.preventDefault();
         if (nameInput.trim()) {
             setPlayerName(nameInput.trim());
+            if (onPlayerNameChange) onPlayerNameChange(nameInput.trim());
         }
     };
 

@@ -186,27 +186,27 @@ const ThemeCustomizer = ({ onClose, onSave, initialSettings }: ThemeCustomizerPr
                     </button>
                 </div>
 
-                <div className="flex flex-1 overflow-hidden min-h-0">
-                    {/* Sidebar Tabs */}
-                    <div className="w-64 border-r border-border bg-secondary/5 flex flex-col p-4 gap-2">
+                <div className="flex flex-col lg:flex-row flex-1 overflow-hidden min-h-0">
+                    {/* Sidebar/Top Tabs */}
+                    <div className="w-full lg:w-64 flex lg:flex-col overflow-x-auto lg:overflow-y-auto lg:border-r border-b lg:border-b-0 border-border bg-secondary/5 p-2 lg:p-4 gap-2 shrink-0 no-scrollbar">
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as Tab)}
-                                className={`flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-mono transition-all duration-200 ${activeTab === tab.id
-                                        ? 'bg-primary text-primary-foreground shadow-xl scale-[1.02]'
-                                        : 'hover:bg-secondary/50 text-muted-foreground hover:text-foreground'
+                                className={`flex items-center gap-2 lg:gap-4 px-3 lg:px-4 py-2 lg:py-3 rounded-lg lg:rounded-xl text-xs lg:text-sm font-mono transition-all duration-200 shrink-0 lg:shrink ${activeTab === tab.id
+                                    ? 'bg-primary text-primary-foreground shadow-lg lg:shadow-xl lg:scale-[1.02]'
+                                    : 'hover:bg-secondary/50 text-muted-foreground hover:text-foreground'
                                     }`}
                             >
-                                <tab.icon className="h-5 w-5" />
-                                <span className="font-bold tracking-tight">{tab.label}</span>
+                                <tab.icon className="h-4 w-4 lg:h-5 lg:w-5" />
+                                <span className="font-bold tracking-tight whitespace-nowrap">{tab.label}</span>
                             </button>
                         ))}
                     </div>
 
                     {/* Content Area */}
                     <div className="flex-1 flex flex-col overflow-hidden bg-background">
-                        <div className="flex-1 p-8 lg:p-12 overflow-y-auto custom-scrollbar space-y-12">
+                        <div className="flex-1 p-4 lg:p-12 overflow-y-auto custom-scrollbar space-y-8 lg:space-y-12 pb-24 lg:pb-12">
                             {activeTab === 'colors' && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
                                     <ColorInput label="Background" value={settings.background} onChange={v => setSettings(s => ({ ...s, background: v }))} />
@@ -224,12 +224,12 @@ const ThemeCustomizer = ({ onClose, onSave, initialSettings }: ThemeCustomizerPr
                                 <div className="space-y-8">
                                     <div className="space-y-4">
                                         <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Select Font Family</label>
-                                        <div className="grid grid-cols-2 gap-2">
+                                        <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
                                             {FONTS.map(font => (
                                                 <button
                                                     key={font}
                                                     onClick={() => setSettings(s => ({ ...s, font }))}
-                                                    className={`px-3 py-2.5 text-xs font-mono border rounded-lg transition-all text-left truncate ${settings.font === font ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-border hover:border-primary/40 bg-secondary/20'
+                                                    className={`px-3 py-2 text-xs font-mono border rounded-lg transition-all text-left truncate ${settings.font === font ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-border hover:border-primary/40 bg-secondary/20'
                                                         }`}
                                                     style={{ fontFamily: font }}
                                                 >
@@ -301,7 +301,7 @@ const ThemeCustomizer = ({ onClose, onSave, initialSettings }: ThemeCustomizerPr
                         </div>
 
                         {/* Bottom Preview */}
-                        <div className="px-6 py-4 bg-secondary/10 border-t border-border mt-auto relative overflow-hidden">
+                        <div className="px-4 lg:px-6 py-4 bg-secondary/10 border-t border-border mt-auto relative overflow-hidden shrink-0">
                             {/* Background pattern to make blur visible */}
                             <div className="absolute inset-0 opacity-20 pointer-events-none" style={{
                                 backgroundImage: `radial-gradient(${settings.primary} 1px, transparent 1px)`,
@@ -321,16 +321,16 @@ const ThemeCustomizer = ({ onClose, onSave, initialSettings }: ThemeCustomizerPr
                                     WebkitBackdropFilter: `blur(${settings.blur}px)`
                                 }}
                             >
-                                <div className="flex items-center gap-3 mb-4 border-b pb-2" style={{ borderColor: `${settings.border}44` }}>
+                                <div className="flex items-center gap-3 mb-2 lg:mb-4 border-b pb-2" style={{ borderColor: `${settings.border}44` }}>
                                     <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: settings.primary }}></div>
                                     <span className="text-[10px] font-bold tracking-[0.3em] uppercase" style={{ color: settings.primary }}>Terminal Preview</span>
                                 </div>
-                                <p className="mb-4 leading-relaxed">
+                                <p className="mb-2 lg:mb-4 leading-relaxed line-clamp-2 lg:line-clamp-none">
                                     The quick brown <span style={{ color: settings.primary }}>fox</span> jumps over the <span className="line-through decoration-2" style={{ textDecorationColor: settings.error, color: settings.error }}>lazy</span> dog.
                                 </p>
                                 <div className="flex items-center gap-2">
-                                    <div className="w-2 h-[1.2em] animate-pulse" style={{ backgroundColor: settings.caret }}></div>
-                                    <div className="px-3 py-1 bg-secondary rounded text-[9px] font-mono font-bold" style={{ backgroundColor: settings.secondary, color: settings.primary }}>
+                                    <div className="w-2 h-[1.2em] animate-pulse shrink-0" style={{ backgroundColor: settings.caret }}></div>
+                                    <div className="px-3 py-1 bg-secondary rounded text-[9px] font-mono font-bold truncate" style={{ backgroundColor: settings.secondary, color: settings.primary }}>
                                         LATENCY: 12ms
                                     </div>
                                 </div>
@@ -340,24 +340,24 @@ const ThemeCustomizer = ({ onClose, onSave, initialSettings }: ThemeCustomizerPr
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-4 border-t border-border bg-secondary/50 flex items-center justify-between">
+                <div className="p-4 border-t border-border bg-secondary/50 flex flex-col sm:flex-row items-center gap-4 justify-between shrink-0">
                     <button
                         onClick={resetToDefault}
-                        className="flex items-center gap-2 px-4 py-2 text-[11px] font-mono uppercase font-bold text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-all"
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-[11px] font-mono uppercase font-bold text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-all"
                     >
                         <RotateCcw className="h-3.5 w-3.5" />
                         Factory Reset
                     </button>
-                    <div className="flex gap-3">
+                    <div className="flex w-full sm:w-auto gap-3">
                         <button
                             onClick={onClose}
-                            className="px-6 py-2 text-[11px] font-mono uppercase font-bold bg-secondary hover:bg-secondary/80 rounded-lg transition-all"
+                            className="flex-1 sm:flex-none px-6 py-2 text-[11px] font-mono uppercase font-bold bg-secondary hover:bg-secondary/80 rounded-lg transition-all"
                         >
                             Discard
                         </button>
                         <button
                             onClick={handleApply}
-                            className="flex items-center gap-2 px-8 py-2 bg-primary text-primary-foreground text-[11px] font-mono font-bold uppercase rounded-lg shadow-lg hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-2 bg-primary text-primary-foreground text-[11px] font-mono font-bold uppercase rounded-lg shadow-lg hover:opacity-90 transition-all"
                         >
                             <Save className="h-4 w-4" />
                             Sync Theme

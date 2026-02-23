@@ -6,6 +6,7 @@ import TypingArea from '@/components/TypingArea';
 import StatsBar from '@/components/StatsBar';
 import ResultsPanel from '@/components/ResultsPanel';
 import HistoryPanel from '@/components/HistoryPanel';
+import AboutPanel from '@/components/AboutPanel';
 import KeyboardHeatmap from '@/components/KeyboardHeatmap';
 import KeyboardPreview from '@/components/KeyboardPreview';
 import VsChallenge from '@/components/VsChallenge';
@@ -41,6 +42,7 @@ const Index = () => {
   });
   const [showHistory, setShowHistory] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [showVs, setShowVs] = useState(false);
   const [showGC, setShowGC] = useState(false);
   const [showBattleIntro, setShowBattleIntro] = useState(false);
@@ -59,6 +61,18 @@ const Index = () => {
     const saved = localStorage.getItem('kf_custom_theme_settings');
     return saved ? JSON.parse(saved) : undefined;
   });
+
+  const [playerName, setPlayerName] = useState<string | null>(() => localStorage.getItem('kf_vs_player_name'));
+
+  const handlePlayerNameChange = (name: string) => {
+    localStorage.setItem('kf_vs_player_name', name);
+    setPlayerName(name);
+  };
+
+  const handlePlayerNameReset = () => {
+    localStorage.removeItem('kf_vs_player_name');
+    setPlayerName(null);
+  };
 
   // Apply theme class
   useEffect(() => {
@@ -316,10 +330,10 @@ const Index = () => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        if (showHistory) {
+        if (showHistory || showHeatmap || showAbout) {
           setShowHistory(false);
-        } else if (showHeatmap) {
           setShowHeatmap(false);
+          setShowAbout(false);
         } else {
           handleRestart();
         }
@@ -327,7 +341,18 @@ const Index = () => {
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [handleRestart, showHeatmap, showHistory]);
+  }, [handleRestart, showHeatmap, showHistory, showAbout]);
+
+  const handleGCToggle = () => {
+    const next = !showGC;
+    setShowGC(next);
+    if (next) {
+      setShowVs(false);
+      setShowHistory(false);
+      setShowHeatmap(false);
+      setShowAbout(false);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background scanline">
@@ -339,12 +364,24 @@ const Index = () => {
           setShowHistory(p => !p);
           setShowHeatmap(false);
           setShowVs(false);
+          setShowGC(false);
+          setShowAbout(false);
         }}
         showHeatmap={showHeatmap}
         onHeatmapToggle={() => {
           setShowHeatmap(p => !p);
           setShowHistory(false);
           setShowVs(false);
+          setShowGC(false);
+          setShowAbout(false);
+        }}
+        showAbout={showAbout}
+        onAboutToggle={() => {
+          setShowAbout(p => !p);
+          setShowHistory(false);
+          setShowHeatmap(false);
+          setShowVs(false);
+          setShowGC(false);
         }}
         showKeyboard={showKeyboard}
         onKeyboardToggle={() => {
@@ -361,20 +398,14 @@ const Index = () => {
           setShowHistory(false);
           setShowHeatmap(false);
           setShowGC(false);
+          setShowAbout(false);
 
           if (enteringVs) {
             setShowBattleIntro(true);
           }
         }}
         showGC={showGC}
-        onGCToggle={() => {
-          const enteringGC = !showGC;
-          setShowGC(enteringGC);
-          setShowVs(false);
-          setShowHistory(false);
-          setShowHeatmap(false);
-          setShowBattleIntro(false);
-        }}
+        onGCToggle={handleGCToggle}
         onCustomizerToggle={() => setShowCustomizer(true)}
       />
 
@@ -517,10 +548,12 @@ const Index = () => {
 
       <main className="flex-1 container mx-auto px-4 py-1 lg:py-2 max-w-7xl">
         {showVs ? (
-          <VsChallenge onExit={() => setShowVs(false)} soundEnabled={soundEnabled} />
+          <VsChallenge onExit={() => setShowVs(false)} soundEnabled={soundEnabled} onPlayerNameChange={handlePlayerNameChange} />
         ) : showGC ? (
           <GCLobby
-            playerName={localStorage.getItem('kf_vs_player_name')}
+            playerName={playerName}
+            onJoin={handlePlayerNameChange}
+            onResetName={handlePlayerNameReset}
             onExit={() => setShowGC(false)}
             onJoinVsFromGC={(_roomCode) => {
               // sessionStorage already set by GCLobby before calling this
@@ -537,6 +570,8 @@ const Index = () => {
               return code;
             }}
           />
+        ) : showAbout ? (
+          <AboutPanel onExit={() => setShowAbout(false)} />
         ) : showHistory ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto py-8">
             <div className="flex items-center justify-between mb-6">

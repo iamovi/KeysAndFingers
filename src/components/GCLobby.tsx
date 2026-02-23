@@ -18,6 +18,8 @@ import { toast } from 'sonner';
 
 interface GCLobbyProps {
     playerName: string | null;
+    onJoin: (name: string) => void;
+    onResetName: () => void;
     onExit: () => void;
     onJoinVsFromGC: (roomCode: string) => void;
     onCreateChallengeRoom: () => string;
@@ -38,7 +40,7 @@ const StatusLabel = ({ status }: { status: 'idle' | 'busy' | 'in-race' }) => {
     return <span className={`text-[9px] font-mono uppercase ${colors[status]}`}>{labels[status]}</span>;
 };
 
-const GCLobby = ({ playerName, onExit, onJoinVsFromGC, onCreateChallengeRoom }: GCLobbyProps) => {
+const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCreateChallengeRoom }: GCLobbyProps) => {
     const [localName, setLocalName] = useState('');
     const {
         isConnected,
@@ -70,8 +72,7 @@ const GCLobby = ({ playerName, onExit, onJoinVsFromGC, onCreateChallengeRoom }: 
     const handleSetName = (e: React.FormEvent) => {
         e.preventDefault();
         if (localName.trim()) {
-            localStorage.setItem('kf_vs_player_name', localName.trim());
-            window.location.reload();
+            onJoin(localName.trim());
         }
     };
 
@@ -262,10 +263,14 @@ const GCLobby = ({ playerName, onExit, onJoinVsFromGC, onCreateChallengeRoom }: 
 
                 <div className="flex items-center gap-2">
                     {myUser && (
-                        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/40 border border-border">
+                        <button
+                            onClick={() => { leave(); onResetName(); }}
+                            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/40 border border-border hover:bg-secondary/60 transition-colors group"
+                        >
                             <StatusDot status={myUser.status} />
                             <span className="text-xs font-mono font-bold">{playerName}</span>
-                        </div>
+                            <span className="text-[10px] font-mono text-green-500 underline underline-offset-2 opacity-70 group-hover:opacity-100 transition-opacity">CHANGE</span>
+                        </button>
                     )}
                     <button
                         onClick={() => { leave(); onExit(); }}
@@ -428,14 +433,20 @@ const GCLobby = ({ playerName, onExit, onJoinVsFromGC, onCreateChallengeRoom }: 
                     </div>
                     <div className="flex-1 overflow-y-auto p-2">
                         {myUser && (
-                            <div className="mb-2 p-2 rounded-md bg-amber-500/5 border border-amber-500/20">
+                            <button
+                                onClick={() => { leave(); onResetName(); }}
+                                className="w-full text-left mb-2 p-2 rounded-md bg-amber-500/5 border border-amber-500/20 hover:bg-amber-500/10 transition-colors group"
+                            >
                                 <div className="flex items-center gap-2">
                                     <StatusDot status={myUser.status} />
                                     <span className="text-xs font-mono font-bold truncate flex-1">{playerName}</span>
                                     <Crown className="h-3 w-3 text-amber-500 shrink-0" />
                                 </div>
-                                <StatusLabel status={myUser.status} />
-                            </div>
+                                <div className="flex items-center justify-between">
+                                    <StatusLabel status={myUser.status} />
+                                    <span className="text-[9px] font-mono text-amber-500 underline opacity-0 group-hover:opacity-100 transition-opacity">CHANGE</span>
+                                </div>
+                            </button>
                         )}
                         <UsersList
                             users={otherUsers}
