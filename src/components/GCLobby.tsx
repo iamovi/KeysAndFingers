@@ -61,12 +61,16 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
         declineChallenge,
         clearChallengeAccepted,
         clearChallengeDeclined,
+        updateStatus,
+        cancelChallenge,
     } = useGCLobby(playerName);
 
     const [input, setInput] = useState('');
     const [activeTab, setActiveTab] = useState<'chat' | 'users'>('chat');
     const [challengingUser, setChallenging] = useState<string | null>(null);
     const [isChallenging, setIsChallenging] = useState(false);
+    const challengeTargetIdRef = useRef<string | null>(null);
+    const challengeTargetNameRef = useRef<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const handleSetName = (e: React.FormEvent) => {
@@ -94,6 +98,9 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
         const { roomCode, byName } = challengeAccepted;
         clearChallengeAccepted();
         setIsChallenging(false);
+        if (challengeTimeoutRef.current) { clearTimeout(challengeTimeoutRef.current); challengeTimeoutRef.current = null; }
+        challengeTargetIdRef.current = null;
+        challengeTargetNameRef.current = null;
         toast.success(`${byName} accepted! Starting race...`, { duration: 2000 });
         setTimeout(() => {
             leaveSilently();
@@ -108,8 +115,22 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
         setIsChallenging(false);
         sessionStorage.removeItem('kf_gc_host_code');
         clearChallengeDeclined();
+        if (challengeTimeoutRef.current) { clearTimeout(challengeTimeoutRef.current); challengeTimeoutRef.current = null; }
+        challengeTargetIdRef.current = null;
+        challengeTargetNameRef.current = null;
+        updateStatus('idle'); // back to idle when opponent declines
         toast.error(`${challengeDeclined} declined your challenge`);
-    }, [challengeDeclined, clearChallengeDeclined]);
+    }, [challengeDeclined, clearChallengeDeclined, updateStatus]);
+
+    // When challenge is cancelled by challenger → dismiss the toast
+    const prevPendingRef = useRef<typeof pendingChallenge>(null);
+    useEffect(() => {
+        if (prevPendingRef.current && !pendingChallenge) {
+            // Had a challenge before, now it's gone — challenger cancelled it
+            toast.dismiss('gc-challenge');
+        }
+        prevPendingRef.current = pendingChallenge;
+    }, [pendingChallenge]);
 
     // When we receive a challenge → show persistent toast with Accept/Decline buttons
     useEffect(() => {
@@ -173,6 +194,9 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
         }
     };
 
+    // Auto-reset busy status after 30s if opponent never responds
+    const challengeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     // Challenger: send challenge and STAY in GC waiting for response
     const handleChallenge = useCallback(async (user: GCUser) => {
         setChallenging(user.id);
@@ -181,12 +205,30 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
             await sendChallenge(user.id, user.name, roomCode);
             sessionStorage.setItem('kf_gc_host_code', roomCode);
             setIsChallenging(true);
+            challengeTargetIdRef.current = user.id;
+            challengeTargetNameRef.current = user.name;
+            updateStatus('busy'); // show as busy while waiting for opponent response
+
+            // Auto-reset after 30s if no response (matches receiver timeout)
+            if (challengeTimeoutRef.current) clearTimeout(challengeTimeoutRef.current);
+            challengeTimeoutRef.current = setTimeout(() => {
+                setIsChallenging(false);
+                sessionStorage.removeItem('kf_gc_host_code');
+                if (challengeTargetIdRef.current && challengeTargetNameRef.current) {
+                    cancelChallenge(challengeTargetIdRef.current, challengeTargetNameRef.current);
+                    challengeTargetIdRef.current = null;
+                    challengeTargetNameRef.current = null;
+                }
+                updateStatus('idle');
+                toast.error('Challenge expired — no response');
+                challengeTimeoutRef.current = null;
+            }, 30000);
         } catch {
             toast.error('Failed to send challenge');
         } finally {
             setChallenging(null);
         }
-    }, [sendChallenge, onCreateChallengeRoom]);
+    }, [sendChallenge, onCreateChallengeRoom, updateStatus]);
 
     const otherUsers = onlineUsers.filter(u => u.id !== myId);
     const myUser = onlineUsers.find(u => u.id === myId);
@@ -296,6 +338,13 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
                             onClick={() => {
                                 setIsChallenging(false);
                                 sessionStorage.removeItem('kf_gc_host_code');
+                                if (challengeTimeoutRef.current) { clearTimeout(challengeTimeoutRef.current); challengeTimeoutRef.current = null; }
+                                if (challengeTargetIdRef.current && challengeTargetNameRef.current) {
+                                    cancelChallenge(challengeTargetIdRef.current, challengeTargetNameRef.current);
+                                    challengeTargetIdRef.current = null;
+                                    challengeTargetNameRef.current = null;
+                                }
+                                updateStatus('idle');
                             }}
                             className="shrink-0 p-1 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
                             title="Cancel challenge"

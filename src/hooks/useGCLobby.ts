@@ -260,6 +260,25 @@ export const useGCLobby = (playerName: string | null) => {
                 }
             }
 
+            if (payload.type === 'challenge-cancelled') {
+                // Show cancellation message to everyone in chat
+                if (payload.text) {
+                    const msg: GCMessage = {
+                        id: payload.msgId || createMessageId(),
+                        senderId: 'system',
+                        senderName: 'System',
+                        text: payload.text,
+                        timestamp: payload.timestamp || Date.now(),
+                        type: 'system',
+                    };
+                    setMessages(prev => [...prev, msg].slice(-MAX_MESSAGES));
+                }
+                // Clear the pending challenge on the receiver side
+                if (payload.to === myId.current) {
+                    setPendingChallenge(null);
+                }
+            }
+
             if (payload.type === 'challenge-declined') {
                 // Show decline message to everyone
                 if (payload.text) {
@@ -449,6 +468,32 @@ export const useGCLobby = (playerName: string | null) => {
         setChallengeDeclined(null);
     }, []);
 
+    const cancelChallenge = useCallback((targetId: string, targetName: string) => {
+        if (!channelRef.current) return;
+
+        const msgText = `❌ ${playerName} cancelled the challenge against ${targetName}`;
+        const msgId = createMessageId();
+        const timestamp = Date.now();
+
+        // Show locally to the challenger
+        addSystemMessage(msgText, true, msgId);
+
+        // Broadcast to everyone else
+        channelRef.current.send({
+            type: 'broadcast',
+            event: 'gc',
+            payload: {
+                type: 'challenge-cancelled',
+                senderId: myId.current,
+                fromName: playerName,
+                to: targetId,
+                text: msgText,
+                msgId,
+                timestamp,
+            },
+        });
+    }, [playerName, addSystemMessage]);
+
     const updateStatus = useCallback((status: UserStatus) => {
         if (!channelRef.current) return;
         channelRef.current.track({
@@ -497,5 +542,6 @@ export const useGCLobby = (playerName: string | null) => {
         clearChallengeAccepted,
         clearChallengeDeclined,
         updateStatus,
+        cancelChallenge,
     };
 };

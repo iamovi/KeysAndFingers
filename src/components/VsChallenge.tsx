@@ -26,13 +26,42 @@ interface VsChallengeProps {
     onPlayerNameChange?: (name: string) => void;
 }
 
-type RaceMetrics = Pick<PlayerProgress, 'wpm' | 'accuracy' | 'correctChars' | 'elapsedTime'>;
+type RaceMetrics = Pick<PlayerProgress, 'wpm' | 'accuracy' | 'correctChars' | 'elapsedTime' | 'finishTime'>;
 
-const compareRaceMetrics = (left: RaceMetrics, right: RaceMetrics) => {
-    if (left.correctChars !== right.correctChars) return left.correctChars - right.correctChars;
+// Winner = finished fastest with valid accuracy (>=70%).
+// A finish with <70% accuracy is treated as invalid and loses to any legitimate finish.
+const MIN_ACCURACY_TO_FINISH = 70;
+
+const compareRaceMetrics = (left: RaceMetrics, right: RaceMetrics): number => {
+    const leftFinished = left.finishTime !== null && left.finishTime !== undefined;
+    const rightFinished = right.finishTime !== null && right.finishTime !== undefined;
+    const leftValid = leftFinished && left.accuracy >= MIN_ACCURACY_TO_FINISH;
+    const rightValid = rightFinished && right.accuracy >= MIN_ACCURACY_TO_FINISH;
+
+    // Both finished legitimately: fastest wins
+    if (leftValid && rightValid) {
+        const timeDiff = (right.finishTime as number) - (left.finishTime as number);
+        if (timeDiff !== 0) return timeDiff; // positive = left finished earlier = left wins
+        if (left.wpm !== right.wpm) return left.wpm - right.wpm;
+        return left.accuracy - right.accuracy;
+    }
+
+    // Only one finished legitimately
+    if (leftValid && !rightValid) return 1;
+    if (!leftValid && rightValid) return -1;
+
+    // Both finished but both below 70% (two spammers lol): higher accuracy wins
+    if (leftFinished && rightFinished) return left.accuracy - right.accuracy;
+
+    // Only left finished (even if invalid)
+    if (leftFinished) return 1;
+    // Only right finished (even if invalid)
+    if (rightFinished) return -1;
+
+    // Neither finished (mid-race): higher WPM, then accuracy, then progress
+    if (left.wpm !== right.wpm) return left.wpm - right.wpm;
     if (left.accuracy !== right.accuracy) return left.accuracy - right.accuracy;
-    if (left.elapsedTime !== right.elapsedTime) return right.elapsedTime - left.elapsedTime;
-    return left.wpm - right.wpm;
+    return left.correctChars - right.correctChars;
 };
 
 const VsChallenge = ({ onExit, soundEnabled, onPlayerNameChange }: VsChallengeProps) => {
@@ -85,7 +114,15 @@ const VsChallenge = ({ onExit, soundEnabled, onPlayerNameChange }: VsChallengePr
         }
     }, [playerName, createRoomWithCode, joinRoom]);
 
-    const activeText = challengeText ?? '';
+    // Lock the race text once the race starts — never let it change mid-race
+    // This prevents correct chars showing as red if challengeText gets disrupted
+    const lockedTextRef = useRef<string>('');
+    useEffect(() => {
+        if (challengeText && (phase === 'lobby' || phase === 'countdown')) {
+            lockedTextRef.current = challengeText;
+        }
+    }, [challengeText, phase]);
+    const activeText = phase === 'racing' ? lockedTextRef.current : (challengeText ?? '');
     const { stats, userInput, handleInput, reset, targetText } = useTypingGame(activeText);
     const { playKeystroke, playError, playComplete, playMilestone } = useSoundEffects(soundEnabled);
 
@@ -239,12 +276,14 @@ const VsChallenge = ({ onExit, soundEnabled, onPlayerNameChange }: VsChallengePr
                     accuracy: myData.accuracy || 0,
                     correctChars: myData.correctChars || 0,
                     elapsedTime: myData.elapsedTime || 0,
+                    finishTime: (myData as PlayerProgress).finishTime ?? null,
                 },
                 {
                     wpm: oppData.wpm || 0,
                     accuracy: oppData.accuracy || 0,
                     correctChars: oppData.correctChars || 0,
                     elapsedTime: oppData.elapsedTime || 0,
+                    finishTime: oppData.finishTime ?? null,
                 }
             ) > 0;
             if (iWon) {
@@ -653,6 +692,38 @@ const VsChallenge = ({ onExit, soundEnabled, onPlayerNameChange }: VsChallengePr
                         disabled={stats.isComplete}
                     />
                 </div>
+
+                {/* Live accuracy warning during race */}
+                {stats.isStarted && (() => {
+                    const belowMin = stats.accuracy < 70;
+                    const reachedEnd = userInput.length === targetText.length;
+
+                    if (reachedEnd && belowMin) {
+                        return (
+                            <div className="flex items-center gap-3 px-4 py-3 rounded-md bg-destructive/10 border border-destructive/40 animate-in fade-in duration-300">
+                                <span className="text-xl">❌</span>
+                                <div>
+                                    <p className="text-sm font-mono font-bold text-destructive">Can't finish the race</p>
+                                    <p className="text-xs font-mono text-muted-foreground">Your accuracy is {stats.accuracy}% — need at least 70% to complete</p>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    if (belowMin) {
+                        return (
+                            <div className="flex items-center gap-3 px-4 py-3 rounded-md bg-orange-500/10 border border-orange-500/40 animate-in fade-in duration-300">
+                                <span className="text-xl">⚠️</span>
+                                <div>
+                                    <p className="text-sm font-mono font-bold text-orange-400">Accuracy too low — {stats.accuracy}%</p>
+                                    <p className="text-xs font-mono text-muted-foreground">You won't finish below 70% — slow down!</p>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    return null;
+                })()}
             </div>
         );
     }
@@ -723,13 +794,65 @@ const VsChallenge = ({ onExit, soundEnabled, onPlayerNameChange }: VsChallengePr
                                     value={`${Math.floor(oppData.elapsedTime / 60)}:${Math.floor(oppData.elapsedTime % 60).toString().padStart(2, '0')}`}
                                 />
                             </>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                                <Loader2 className="h-6 w-6 animate-spin mb-2" />
-                                <span className="text-xs font-mono">{opponentName || 'Opponent'} is still typing...</span>
-                                <span className="text-xs font-mono mt-1">{oppData.progress}% complete</span>
-                            </div>
-                        )}
+                        ) : (() => {
+                            const oppStuck = oppData.progress >= 100 && oppData.accuracy < 70;
+                            const oppIsSpamming = oppData.accuracy < 70 && oppData.progress > 10;
+                            return (
+                                <div className="flex flex-col gap-3 py-2">
+                                    {/* Live progress bar */}
+                                    <div className="space-y-1">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Progress</span>
+                                            <span className="text-xs font-mono font-bold">{oppData.progress}%</span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                                            <div
+                                                className={"h-full rounded-full transition-all duration-300 " + (oppIsSpamming ? "bg-destructive" : "bg-blue-500")}
+                                                style={{ width: `${oppData.progress}%` }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Live accuracy */}
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Accuracy</span>
+                                        <span className={"text-xs font-mono font-bold " + (oppIsSpamming ? "text-destructive" : "")}>
+                                            {oppData.accuracy}%
+                                        </span>
+                                    </div>
+
+                                    {/* Live WPM */}
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">WPM</span>
+                                        <span className="text-xs font-mono font-bold">{oppData.wpm}</span>
+                                    </div>
+
+                                    {/* Spammer warning */}
+                                    {oppStuck ? (
+                                        <div className="mt-1 flex items-center gap-2 px-2 py-2 rounded bg-destructive/10 border border-destructive/30">
+                                            <span className="text-base">⚠️</span>
+                                            <div>
+                                                <p className="text-[10px] font-mono font-bold text-destructive uppercase tracking-wide">Invalid finish</p>
+                                                <p className="text-[9px] font-mono text-muted-foreground">Accuracy too low — can't complete</p>
+                                            </div>
+                                        </div>
+                                    ) : oppIsSpamming ? (
+                                        <div className="mt-1 flex items-center gap-2 px-2 py-2 rounded bg-orange-500/10 border border-orange-500/30">
+                                            <span className="text-base">🤨</span>
+                                            <div>
+                                                <p className="text-[10px] font-mono font-bold text-orange-400 uppercase tracking-wide">Accuracy is cooked</p>
+                                                <p className="text-[9px] font-mono text-muted-foreground">Below 70% — won't count as finish</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center gap-2 pt-1 text-muted-foreground">
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            <span className="text-[10px] font-mono">still typing...</span>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
 

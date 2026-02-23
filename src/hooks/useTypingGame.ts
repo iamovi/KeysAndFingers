@@ -31,22 +31,21 @@ export const useTypingGame = (text: string): UseTypingGameReturn => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isStarted = userInput.length > 0;
-  const isComplete = userInput.length === text.length && userInput.length > 0;
 
-  // Count current state
+  // Count current state early to compute accuracy before declaring isComplete
   let correctChars = 0;
   for (let i = 0; i < userInput.length; i++) {
-    if (userInput[i] === text[i]) {
-      correctChars++;
-    }
+    if (userInput[i] === text[i]) correctChars++;
   }
-
-  // Real accuracy: (Attempts - Mistakes) / Attempts
-  // We use total successful keypresses (at their final position) vs total attempts
   const totalAttempts = userInput.length + totalMistakes;
   const accuracy = totalAttempts > 0
     ? Math.max(0, Math.round(((totalAttempts - totalMistakes) / totalAttempts) * 100))
     : 100;
+
+  // Require 70%+ accuracy to count as complete — blocks spammers who mash through the text
+  const MIN_ACCURACY_TO_FINISH = 70;
+  const isComplete = userInput.length === text.length && userInput.length > 0 && accuracy >= MIN_ACCURACY_TO_FINISH;
+
 
   const progress = Math.round((userInput.length / text.length) * 100);
 
