@@ -9,6 +9,7 @@ import HistoryPanel from '@/components/HistoryPanel';
 import KeyboardHeatmap from '@/components/KeyboardHeatmap';
 import KeyboardPreview from '@/components/KeyboardPreview';
 import VsChallenge from '@/components/VsChallenge';
+import GCLobby from '@/components/GCLobby';
 import { useTypingGame } from '@/hooks/useTypingGame';
 import { useLocalStats } from '@/hooks/useLocalStats';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
@@ -16,6 +17,10 @@ import { useHistory } from '@/hooks/useHistory';
 import { getRandomText, getTextCount } from '@/data/texts';
 import { RotateCcw, Shuffle, ClipboardPaste, Palette, Swords, Grid3X3, Sparkles, Zap } from 'lucide-react';
 import ThemeCustomizer, { CustomThemeSettings } from '@/components/ThemeCustomizer';
+
+const THEME_OPTIONS = ['light', 'dark', 'matrix', 'cyberpink', 'retro', 'midnight', 'nord', 'aurora', 'animate', 'custom'] as const;
+type ThemeName = (typeof THEME_OPTIONS)[number];
+const isThemeName = (value: string): value is ThemeName => THEME_OPTIONS.includes(value as ThemeName);
 
 const Index = () => {
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'custom'>('medium');
@@ -37,14 +42,15 @@ const Index = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showVs, setShowVs] = useState(false);
+  const [showGC, setShowGC] = useState(false);
   const [showBattleIntro, setShowBattleIntro] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(() => {
     const saved = localStorage.getItem('keysfingers_keyboard');
     return saved !== null ? saved === 'true' : true;
   });
-  const [theme, setTheme] = useState<'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midnight' | 'nord' | 'aurora' | 'animate' | 'custom'>(() => {
+  const [theme, setTheme] = useState<ThemeName>(() => {
     const saved = localStorage.getItem('keysfingers_theme');
-    if (saved) return saved as any;
+    if (saved && isThemeName(saved)) return saved;
     return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
   });
 
@@ -75,7 +81,8 @@ const Index = () => {
       }
       r /= 255; g /= 255; b /= 255;
       const max = Math.max(r, g, b), min = Math.min(r, g, b);
-      let h = 0, s = 0, l = (max + min) / 2;
+      let h = 0, s = 0;
+      const l = (max + min) / 2;
       if (max !== min) {
         const d = max - min;
         s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
@@ -148,6 +155,7 @@ const Index = () => {
   const { history, addEntry, clearHistory, aggregatedMistyped } = useHistory();
 
   const prevInputLen = useRef(0);
+  const completionHandledRef = useRef(false);
   const isComplete = mode === 'standard' ? stats.isComplete : timedComplete;
 
   // Sound toggle persist
@@ -174,27 +182,46 @@ const Index = () => {
       }
     }
     prevInputLen.current = userInput.length;
-  }, [userInput]);
+  }, [currentText.text, playError, playKeystroke, playMilestone, userInput]);
 
   // Completion sound
   useEffect(() => {
-    if (isComplete && stats.wpm > 0) {
-      playComplete();
-      const wasNewBest = !personalBest || stats.wpm > personalBest.wpm;
-      setIsNewBest(wasNewBest);
-      saveResult(stats.wpm, stats.accuracy, difficulty);
-      addEntry({
-        wpm: stats.wpm,
-        accuracy: stats.accuracy,
-        difficulty,
-        mode,
-        correctChars: stats.correctChars,
-        incorrectChars: stats.incorrectChars,
-        elapsedTime: stats.elapsedTime,
-        mistypedChars: stats.mistypedChars,
-      });
+    if (!isComplete || stats.wpm <= 0) {
+      completionHandledRef.current = false;
+      return;
     }
-  }, [isComplete]);
+    if (completionHandledRef.current) return;
+
+    completionHandledRef.current = true;
+    playComplete();
+    const wasNewBest = !personalBest || stats.wpm > personalBest.wpm;
+    setIsNewBest(wasNewBest);
+    saveResult(stats.wpm, stats.accuracy, difficulty);
+    addEntry({
+      wpm: stats.wpm,
+      accuracy: stats.accuracy,
+      difficulty,
+      mode,
+      correctChars: stats.correctChars,
+      incorrectChars: stats.incorrectChars,
+      elapsedTime: stats.elapsedTime,
+      mistypedChars: stats.mistypedChars,
+    });
+  }, [
+    addEntry,
+    difficulty,
+    isComplete,
+    mode,
+    personalBest,
+    playComplete,
+    saveResult,
+    stats.accuracy,
+    stats.correctChars,
+    stats.elapsedTime,
+    stats.incorrectChars,
+    stats.mistypedChars,
+    stats.wpm,
+  ]);
 
   const loadNewText = useCallback((d: 'easy' | 'medium' | 'hard' | 'custom') => {
     if (d === 'custom') return;
@@ -215,6 +242,7 @@ const Index = () => {
     setTimeRemaining(null);
     setTimedComplete(false);
     prevInputLen.current = 0;
+    completionHandledRef.current = false;
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
@@ -228,6 +256,7 @@ const Index = () => {
     setTimeRemaining(null);
     setTimedComplete(false);
     prevInputLen.current = 0;
+    completionHandledRef.current = false;
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
@@ -242,6 +271,7 @@ const Index = () => {
     setTimeRemaining(null);
     setTimedComplete(false);
     prevInputLen.current = 0;
+    completionHandledRef.current = false;
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
@@ -270,15 +300,16 @@ const Index = () => {
     };
   }, [stats.isStarted, mode, timerDuration, timedComplete]);
 
-  const handleRestart = () => {
+  const handleRestart = useCallback(() => {
     reset();
     loadNewText(difficulty);
     setIsNewBest(false);
     setTimeRemaining(null);
     setTimedComplete(false);
     prevInputLen.current = 0;
+    completionHandledRef.current = false;
     if (timerRef.current) clearInterval(timerRef.current);
-  };
+  }, [difficulty, loadNewText, reset]);
 
   // Keyboard shortcut: Esc to reset or close views
   useEffect(() => {
@@ -296,7 +327,7 @@ const Index = () => {
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [difficulty, customText, showHistory, showHeatmap]);
+  }, [handleRestart, showHeatmap, showHistory]);
 
   return (
     <div className="flex flex-col min-h-screen bg-background scanline">
@@ -329,10 +360,20 @@ const Index = () => {
           setShowVs(enteringVs);
           setShowHistory(false);
           setShowHeatmap(false);
+          setShowGC(false);
 
           if (enteringVs) {
             setShowBattleIntro(true);
           }
+        }}
+        showGC={showGC}
+        onGCToggle={() => {
+          const enteringGC = !showGC;
+          setShowGC(enteringGC);
+          setShowVs(false);
+          setShowHistory(false);
+          setShowHeatmap(false);
+          setShowBattleIntro(false);
         }}
         onCustomizerToggle={() => setShowCustomizer(true)}
       />
@@ -477,6 +518,25 @@ const Index = () => {
       <main className="flex-1 container mx-auto px-4 py-1 lg:py-2 max-w-7xl">
         {showVs ? (
           <VsChallenge onExit={() => setShowVs(false)} soundEnabled={soundEnabled} />
+        ) : showGC ? (
+          <GCLobby
+            playerName={localStorage.getItem('kf_vs_player_name')}
+            onExit={() => setShowGC(false)}
+            onJoinVsFromGC={(_roomCode) => {
+              // sessionStorage already set by GCLobby before calling this
+              setShowGC(false);
+              setShowVs(true);
+              setShowBattleIntro(false);
+            }}
+            onCreateChallengeRoom={() => {
+              // Just generate and return the code — do NOT switch views here
+              // GCLobby will switch views after the broadcast flushes
+              const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+              let code = '';
+              for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+              return code;
+            }}
+          />
         ) : showHistory ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto py-8">
             <div className="flex items-center justify-between mb-6">

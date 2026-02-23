@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings2, Zap, Sparkles, Waves, Palette, Keyboard, Volume2, VolumeX, History, Grid3X3, Menu, X, Monitor, Sun, Moon, Swords, Check } from 'lucide-react';
+import { Settings2, Zap, Sparkles, Waves, Palette, Keyboard, Volume2, VolumeX, History, Grid3X3, Menu, X, Monitor, Sun, Moon, Swords, Check, MessageSquare } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +22,8 @@ interface HeaderProps {
   onThemeChange: (theme: 'light' | 'dark' | 'matrix' | 'cyberpink' | 'retro' | 'midnight' | 'nord' | 'aurora' | 'animate' | 'custom') => void;
   showVs?: boolean;
   onVsToggle?: () => void;
+  showGC?: boolean;
+  onGCToggle?: () => void;
   onCustomizerToggle: () => void;
 }
 
@@ -51,6 +53,8 @@ const Header = ({
   onThemeChange,
   showVs,
   onVsToggle,
+  showGC,
+  onGCToggle,
   onCustomizerToggle,
 }: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -72,6 +76,17 @@ const Header = ({
         >
           <Swords className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">VS</span>
+        </button>
+      )}
+      {onGCToggle && (
+        <button
+          onClick={onGCToggle}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono rounded-sm transition-all duration-200
+            ${showGC ? 'bg-green-600 text-white' : 'bg-secondary text-secondary-foreground hover:bg-accent hover:text-green-500'}`}
+          title="Public Lobby"
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">GC</span>
         </button>
       )}
       <button

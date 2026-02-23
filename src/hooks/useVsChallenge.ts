@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { getRandomText } from '@/data/texts';
 
 // ---------- Types ----------
 export type VsPhase = 'idle' | 'lobby' | 'countdown' | 'racing' | 'finished';
@@ -21,7 +22,7 @@ type MessageType = 'ping' | 'pong' | 'text' | 'progress' | 'finish' | 'restart-r
 
 interface VSMessage {
     type: MessageType;
-    payload?: any;
+    payload?: unknown;
     senderId: string;
     settings?: {
         difficulty: 'easy' | 'medium' | 'hard';
@@ -43,6 +44,21 @@ const defaultProgress: PlayerProgress = {
     finishTime: null,
 };
 
+const isPlayerProgress = (value: unknown): value is PlayerProgress => {
+    if (!value || typeof value !== 'object') return false;
+    const candidate = value as Partial<PlayerProgress>;
+    return (
+        typeof candidate.progress === 'number' &&
+        typeof candidate.wpm === 'number' &&
+        typeof candidate.accuracy === 'number' &&
+        typeof candidate.correctChars === 'number' &&
+        typeof candidate.incorrectChars === 'number' &&
+        typeof candidate.elapsedTime === 'number' &&
+        typeof candidate.finished === 'boolean' &&
+        (typeof candidate.finishTime === 'number' || candidate.finishTime === null)
+    );
+};
+
 // Generate a random 6-char alphanumeric code
 const generateCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -62,6 +78,7 @@ export interface UsePeerChallengeReturn {
     countdown: number;
     error: string | null;
     createRoom: () => void;
+    createRoomWithCode: (code: string) => void;
     joinRoom: (code: string) => void;
     sendProgress: (p: PlayerProgress) => void;
     sendFinish: (p: PlayerProgress) => void;
@@ -108,28 +125,10 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
 
     const phaseRef = useRef<VsPhase>('idle');
     const playerNameRef = useRef<string | null>(playerName);
+    const opponentConnectedRef = useRef(opponentConnected);
     useEffect(() => { phaseRef.current = phase; }, [phase]);
     useEffect(() => { playerNameRef.current = playerName; }, [playerName]);
-
-    // Cleanup on unmount & handle tab close
-    useEffect(() => {
-        const handleTabClose = () => {
-            if (channelRef.current) {
-                channelRef.current.send({
-                    type: 'broadcast',
-                    event: 'vs',
-                    payload: { type: 'left', senderId: myId.current } as VSMessage
-                });
-            }
-        };
-
-        window.addEventListener('beforeunload', handleTabClose);
-
-        return () => {
-            window.removeEventListener('beforeunload', handleTabClose);
-            cleanupAll();
-        };
-    }, []);
+    useEffect(() => { opponentConnectedRef.current = opponentConnected; }, [opponentConnected]);
 
     const stopHeartbeat = useCallback(() => {
         if (heartbeatRef.current) {
@@ -154,6 +153,26 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
         }
         opponentId.current = null;
     }, [stopHeartbeat]);
+
+    // Cleanup on unmount & handle tab close
+    useEffect(() => {
+        const handleTabClose = () => {
+            if (channelRef.current) {
+                channelRef.current.send({
+                    type: 'broadcast',
+                    event: 'vs',
+                    payload: { type: 'left', senderId: myId.current } as VSMessage
+                });
+            }
+        };
+
+        window.addEventListener('beforeunload', handleTabClose);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleTabClose);
+            cleanupAll();
+        };
+    }, [cleanupAll]);
 
     const leaveRoom = useCallback(() => {
         cleanupAll();
@@ -201,7 +220,7 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
 
             // Check timeout
             if (Date.now() - lastPongRef.current > HEARTBEAT_TIMEOUT) {
-                if (opponentConnected) {
+                if (opponentConnectedRef.current) {
                     setOpponentConnected(false);
                     setIsOpponentReady(false);
                     if (phaseRef.current !== 'idle' && phaseRef.current !== 'finished') {
@@ -215,7 +234,7 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
                 }
             }
         }, HEARTBEAT_INTERVAL);
-    }, [stopHeartbeat]); // Removed opponentConnected from deps to prevent loop
+    }, [stopHeartbeat]);
 
     // ---- Countdown ----
     const startCountdown = useCallback(() => {
@@ -243,19 +262,17 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
         setPhase('lobby');
 
         if (host) {
-            import('@/data/texts').then(({ getRandomText }) => {
-                const t = getRandomText(difficulty);
-                setChallengeText(t.text);
-                channelRef.current?.send({
-                    type: 'broadcast',
-                    event: 'vs',
-                    payload: {
-                        type: 'text',
-                        payload: t.text,
-                        senderId: myId.current,
-                        settings: { difficulty }
-                    } as VSMessage
-                });
+            const t = getRandomText(difficulty);
+            setChallengeText(t.text);
+            channelRef.current?.send({
+                type: 'broadcast',
+                event: 'vs',
+                payload: {
+                    type: 'text',
+                    payload: t.text,
+                    senderId: myId.current,
+                    settings: { difficulty }
+                } as VSMessage
             });
         }
     }, [difficulty]);
@@ -328,7 +345,7 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
                         break;
 
                     case 'text':
-                        if (payload.payload) {
+                        if (typeof payload.payload === 'string') {
                             setChallengeText(payload.payload);
                         }
                         if (payload.settings?.difficulty) {
@@ -337,11 +354,15 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
                         break;
 
                     case 'progress':
-                        setOpponentProgress(payload.payload);
+                        if (isPlayerProgress(payload.payload)) {
+                            setOpponentProgress(payload.payload);
+                        }
                         break;
 
                     case 'finish':
-                        setOpponentProgress(payload.payload);
+                        if (isPlayerProgress(payload.payload)) {
+                            setOpponentProgress(payload.payload);
+                        }
                         break;
 
                     case 'restart-request':
@@ -362,7 +383,9 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
                         break;
 
                     case 'reward':
-                        setRewardUrl(payload.payload);
+                        if (typeof payload.payload === 'string') {
+                            setRewardUrl(payload.payload);
+                        }
                         break;
 
                     case 'left':
@@ -411,24 +434,22 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
 
         // Host picks text when opponent connects (first ping)
         // We'll watch opponentConnected for this
-    }, [cleanupAll, startHeartbeat, startCountdown, handleRematchStart]);
+    }, [cleanupAll, startHeartbeat, handleRematchStart]);
 
     // Logic to send text after opponent connects
     useEffect(() => {
         if (isHost && opponentConnected && phase === 'lobby' && !challengeText) {
-            import('@/data/texts').then(({ getRandomText }) => {
-                const t = getRandomText(difficulty);
-                setChallengeText(t.text);
-                channelRef.current?.send({
-                    type: 'broadcast',
-                    event: 'vs',
-                    payload: {
-                        type: 'text',
-                        payload: t.text,
-                        senderId: myId.current,
-                        settings: { difficulty }
-                    } as VSMessage
-                });
+            const t = getRandomText(difficulty);
+            setChallengeText(t.text);
+            channelRef.current?.send({
+                type: 'broadcast',
+                event: 'vs',
+                payload: {
+                    type: 'text',
+                    payload: t.text,
+                    senderId: myId.current,
+                    settings: { difficulty }
+                } as VSMessage
             });
         }
     }, [isHost, opponentConnected, phase, challengeText, difficulty]);
@@ -442,6 +463,10 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
 
     const createRoom = useCallback(() => {
         const code = generateCode();
+        setupChannel(code, true);
+    }, [setupChannel]);
+
+    const createRoomWithCode = useCallback((code: string) => {
         setupChannel(code, true);
     }, [setupChannel]);
 
@@ -501,6 +526,7 @@ export const useVsChallenge = (): UsePeerChallengeReturn => {
         countdown,
         error,
         createRoom,
+        createRoomWithCode,
         joinRoom,
         sendProgress,
         sendFinish,

@@ -25,6 +25,15 @@ interface VsChallengeProps {
     soundEnabled: boolean;
 }
 
+type RaceMetrics = Pick<PlayerProgress, 'wpm' | 'accuracy' | 'correctChars' | 'elapsedTime'>;
+
+const compareRaceMetrics = (left: RaceMetrics, right: RaceMetrics) => {
+    if (left.correctChars !== right.correctChars) return left.correctChars - right.correctChars;
+    if (left.accuracy !== right.accuracy) return left.accuracy - right.accuracy;
+    if (left.elapsedTime !== right.elapsedTime) return right.elapsedTime - left.elapsedTime;
+    return left.wpm - right.wpm;
+};
+
 const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
     const {
         phase,
@@ -35,6 +44,7 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
         countdown,
         error,
         createRoom,
+        createRoomWithCode,
         joinRoom,
         sendProgress,
         sendFinish,
@@ -61,11 +71,25 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
     const [loadingReward, setLoadingReward] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
 
+    // Auto-join or host from GC lobby challenge
+    useEffect(() => {
+        const gcJoinCode = sessionStorage.getItem('kf_gc_join_code');
+        const gcHostCode = sessionStorage.getItem('kf_gc_host_code');
+        if (gcJoinCode) {
+            sessionStorage.removeItem('kf_gc_join_code');
+            if (playerName) joinRoom(gcJoinCode);
+        } else if (gcHostCode) {
+            sessionStorage.removeItem('kf_gc_host_code');
+            if (playerName) createRoomWithCode(gcHostCode);
+        }
+    }, [playerName, createRoomWithCode, joinRoom]);
+
     const activeText = challengeText ?? '';
     const { stats, userInput, handleInput, reset, targetText } = useTypingGame(activeText);
     const { playKeystroke, playError, playComplete, playMilestone } = useSoundEffects(soundEnabled);
 
     const prevInputLen = useRef(0);
+    const wasOpponentConnectedRef = useRef(false);
 
     useEffect(() => {
         if (challengeText) {
@@ -73,7 +97,7 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
             setMyFinishData(null);
             prevInputLen.current = 0;
         }
-    }, [challengeText]);
+    }, [challengeText, reset]);
 
     useEffect(() => {
         if (error) {
@@ -82,10 +106,12 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
     }, [error]);
 
     useEffect(() => {
-        if (opponentConnected && phase !== 'idle') {
+        const justConnected = !wasOpponentConnectedRef.current && opponentConnected;
+        if (justConnected && phase !== 'idle') {
             toast.success(`${opponentName || 'Opponent'} connected!`);
         }
-    }, [opponentConnected, opponentName]);
+        wasOpponentConnectedRef.current = opponentConnected;
+    }, [opponentConnected, opponentName, phase]);
 
     useEffect(() => {
         if (phase !== 'racing') return;
@@ -103,7 +129,7 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
             }
         }
         prevInputLen.current = userInput.length;
-    }, [userInput, phase]);
+    }, [activeText, phase, playError, playKeystroke, playMilestone, userInput]);
 
     useEffect(() => {
         if (phase !== 'racing' || stats.isComplete) return;
@@ -118,7 +144,17 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
             finishTime: null,
         };
         sendProgress(p);
-    }, [stats.progress, stats.wpm, phase]);
+    }, [
+        phase,
+        sendProgress,
+        stats.accuracy,
+        stats.correctChars,
+        stats.elapsedTime,
+        stats.incorrectChars,
+        stats.isComplete,
+        stats.progress,
+        stats.wpm,
+    ]);
 
     useEffect(() => {
         if (phase === 'racing' && stats.isComplete && !myFinishData) {
@@ -136,7 +172,18 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
             setMyFinishData(finish);
             sendFinish(finish);
         }
-    }, [stats.isComplete, phase, myFinishData]);
+    }, [
+        myFinishData,
+        phase,
+        playComplete,
+        sendFinish,
+        stats.accuracy,
+        stats.correctChars,
+        stats.elapsedTime,
+        stats.incorrectChars,
+        stats.isComplete,
+        stats.wpm,
+    ]);
 
     const handleCopyCode = useCallback(() => {
         if (roomCode) {
@@ -170,11 +217,34 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
     };
 
     useEffect(() => {
-        const myData = myFinishData || (phase === 'finished' ? { finished: true, wpm: stats.wpm } : null);
+        const myData = myFinishData || (
+            phase === 'finished'
+                ? {
+                    finished: true,
+                    wpm: stats.wpm,
+                    accuracy: stats.accuracy,
+                    correctChars: stats.correctChars,
+                    elapsedTime: stats.elapsedTime,
+                }
+                : null
+        );
         const oppData = opponentProgress;
 
         if (myData?.finished && oppData.finished && !rewardUrl && !loadingReward) {
-            const iWon = (myData.wpm || 0) > (oppData.wpm || 0);
+            const iWon = compareRaceMetrics(
+                {
+                    wpm: myData.wpm || 0,
+                    accuracy: myData.accuracy || 0,
+                    correctChars: myData.correctChars || 0,
+                    elapsedTime: myData.elapsedTime || 0,
+                },
+                {
+                    wpm: oppData.wpm || 0,
+                    accuracy: oppData.accuracy || 0,
+                    correctChars: oppData.correctChars || 0,
+                    elapsedTime: oppData.elapsedTime || 0,
+                }
+            ) > 0;
             if (iWon) {
                 const fetchReward = async () => {
                     setLoadingReward(true);
@@ -193,7 +263,18 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
                 fetchReward();
             }
         }
-    }, [myFinishData, opponentProgress.finished, rewardUrl, loadingReward, phase, sendReward]);
+    }, [
+        loadingReward,
+        myFinishData,
+        opponentProgress,
+        phase,
+        rewardUrl,
+        sendReward,
+        stats.accuracy,
+        stats.correctChars,
+        stats.elapsedTime,
+        stats.wpm,
+    ]);
 
     if (!playerName) {
         return (
@@ -577,8 +658,9 @@ const VsChallenge = ({ onExit, soundEnabled }: VsChallengeProps) => {
     if (phase === 'finished' || myFinishData) {
         const myData = myFinishData || { ...defaultProgress };
         const oppData = opponentProgress;
-        const iWon = myData.wpm > oppData.wpm;
-        const isDraw = myData.wpm === oppData.wpm;
+        const comparison = compareRaceMetrics(myData, oppData);
+        const iWon = comparison > 0;
+        const isDraw = comparison === 0;
         const oppFinished = oppData.finished;
 
         return (
