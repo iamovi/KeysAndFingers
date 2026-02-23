@@ -1,4 +1,4 @@
-import { Info, Github, Globe, Heart, Rocket, Shield, Zap, Sparkles, Code, Cpu, Swords, MessageSquare } from 'lucide-react';
+import { Info, Github, Globe, Heart, Rocket, Shield, Zap, Sparkles, Code, Cpu, Swords, MessageSquare, Coffee } from 'lucide-react';
 
 const AboutPanel = ({ onExit }: { onExit: () => void }) => {
     return (
@@ -27,7 +27,7 @@ const AboutPanel = ({ onExit }: { onExit: () => void }) => {
                             <Rocket className="h-5 w-5" /> The Mission
                         </h3>
                         <p className="text-muted-foreground font-mono leading-relaxed">
-                            Keys&Fingers is more than just a typing test. It's a glitch-themed, high-performance environment designed for typing enthusiasts who crave both aesthetics and functionality. Our goal is to provide a platform where you can measure your speed, improve your accuracy, and challenge others in real-time.
+                            Keys&Fingers is more than just a typing test. It's a glitch-themed, high-performance environment designed for typing enthusiasts who crave both aesthetics and functionality. The goal is to provide a platform where you can measure your speed, improve your accuracy, and challenge others in real-time.
                         </p>
                     </section>
 
@@ -102,10 +102,10 @@ const AboutPanel = ({ onExit }: { onExit: () => void }) => {
                     <div className="p-6 rounded-2xl border border-primary/20 bg-primary/5 space-y-4">
                         <div className="flex items-center gap-3">
                             <div className="w-20 h-20 rounded-[3px] overflow-hidden border-2 border-primary shadow-xl bg-secondary/30 shrink-0">
-                                <img src="https://raw.githubusercontent.com/iamovi/iamovi/refs/heads/main/assets/init_ovi.jpg" alt="Ovi" className="w-full h-full object-cover px-1" />
+                                <img src="https://iamovi.github.io/old/main.jpg" alt="Ovi" className="w-full h-full object-cover px-1" />
                             </div>
                             <div>
-                                <h4 className="font-mono font-bold text-foreground">Ovi</h4>
+                                <h4 className="font-mono font-bold text-foreground">Ovi ren</h4>
                                 <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Lead Developer</p>
                             </div>
                         </div>
@@ -118,6 +118,9 @@ const AboutPanel = ({ onExit }: { onExit: () => void }) => {
                             </a>
                             <a href="https://iamovi.github.io/" target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50 hover:bg-secondary text-[11px] font-mono transition-colors">
                                 <Globe className="h-3.5 w-3.5" /> iamovi.github.io
+                            </a>
+                            <a href="https://www.supportkori.com/iamovi" target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-[11px] font-mono transition-colors text-red-500 border border-red-500/20">
+                                <Coffee className="h-3.5 w-3.5" /> Buy me a coffee
                             </a>
                         </div>
                     </div>
