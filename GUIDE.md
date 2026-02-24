@@ -197,9 +197,9 @@ npm run build
 ```
 
 Output goes to the `dist/` folder. Deploy to any static host:
-- **GitHub Pages** (already configured in the project)
-- **Netlify** — drag and drop the `dist/` folder
+- **Cloudflare Pages** (primary target, configured with `_redirects`)
 - **Vercel** — connect your GitHub repo
+- **Netlify** — drag and drop the `dist/` folder
 
 Make sure to add your environment variables in your hosting platform's settings.
 

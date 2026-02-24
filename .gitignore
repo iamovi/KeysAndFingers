@@ -24,3 +24,11 @@ dist-ssr
 *.sw?
 
 .env
+
+# Diagnostic Reports
+tsc_output.txt
+eslint_report.txt
+eslint_report.json
+eslint_src_report.txt
+report.txt
+report.json
