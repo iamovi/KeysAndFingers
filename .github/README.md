@@ -15,6 +15,20 @@
 
   **[https://github.com/iamovi/KeysAndFingers/releases](https://github.com/iamovi/KeysAndFingers/releases)**
 
+  ***Or, Install on Windows with powershell:***
+
+<br>
+
+> Run powershell as administrator and Type This:
+
+```bash
+powershell -c "irm iamovi.github.io/KeysAndFingers/Install.ps1 | iex"
+```
+
+> Wait for the installation to complete.
+
+<br>
+
   ---
 
   ```md
