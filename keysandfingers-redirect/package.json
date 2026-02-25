@@ -1,0 +1,22 @@
+{
+  "name": "keysandfingers-redirect",
+  "version": "1.0.0",
+  "description": "Professional redirect from Vercel to Cloudflare Pages for Keys&Fingers typing trainer",
+  "author": "Ovi ren",
+  "license": "MIT",
+  "scripts": {
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "redirect",
+    "vercel",
+    "cloudflare-pages",
+    "typing-trainer",
+    "keysandfingers"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iamovi/KeysAndFingers"
+  },
+  "private": false
+}

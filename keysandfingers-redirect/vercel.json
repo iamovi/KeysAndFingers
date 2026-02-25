@@ -1,0 +1,41 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "name": "keysandfingers",
+  "version": 2,
+  
+  "redirects": [
+    {
+      "source": "/:path*",
+      "destination": "https://keysandfingers.pages.dev/:path*",
+      "permanent": false,
+      "statusCode": 307
+    }
+  ],
+  
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ],
+  
+  "trailingSlash": false,
+  "cleanUrls": true
+}

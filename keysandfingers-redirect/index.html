@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Primary Meta Tags -->
+  <title>Keys&Fingers</title>
+  <meta name="title" content="Keys&Fingers - multiplayer type racing">
+  <meta name="description" content="Improve your typing speed with Keys&Fingers! Features multiplayer battles, real-time WPM tracking, custom themes, and global leaderboards. Free typing test and trainer.">
+  <meta name="author" content="Ovi ren">
+  <meta name="keywords" content="typing test, typing speed, WPM, typing trainer, typing practice, multiplayer typing, typing game, keyboard practice">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://keysandfingers.vercel.app">
+  <meta property="og:title" content="Keys&Fingers - multiplayer type racing">
+  <meta property="og:description" content="Improve your typing speed with Keys&Fingers! Features multiplayer battles, real-time WPM tracking, custom themes, and global leaderboards.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/iamovi/KeysAndFingers/refs/heads/main/main.png">
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://keysandfingers.vercel.app">
+  <meta property="twitter:title" content="Keys&Fingers - multiplayer type racing">
+  <meta property="twitter:description" content="Improve your typing speed with Keys&Fingers! Features multiplayer battles, real-time WPM tracking, custom themes, and global leaderboards.">
+  <meta property="twitter:image" content="https://raw.githubusercontent.com/iamovi/KeysAndFingers/refs/heads/main/main.png">
+  <meta property="twitter:creator" content="@Oviren">
+  
+  <!-- Additional Meta Tags -->
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="https://keysandfingers.pages.dev/alien.png">
+  <link rel="apple-touch-icon" href="https://keysandfingers.pages.dev/alien.png">
+  
+  <!-- Instant redirect for humans (social media crawlers read meta tags before following) -->
+  <meta http-equiv="refresh" content="0;url=https://keysandfingers.pages.dev">
+  
+  <!-- Preconnect to target domain for faster redirect -->
+  <link rel="preconnect" href="https://keysandfingers.pages.dev">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: #0a0a0a;
+      color: #e5e5e5;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    .loading-container {
+      text-align: center;
+      animation: fadeIn 0.3s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .logo {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      border-radius: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 40px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+      }
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+      }
+    }
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid #262626;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 20px auto;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    p {
+      font-size: 14px;
+      color: #a3a3a3;
+      margin-bottom: 8px;
+    }
+    
+    .glitch {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .dots {
+      display: inline-block;
+      width: 20px;
+      text-align: left;
+    }
+    
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+    
+    .dots::after {
+      content: '.';
+      animation: dots 1.5s infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-container">
+    <div class="logo">⌨️</div>
+    <h1>Keys&Fingers</h1>
+    <div class="spinner"></div>
+    <p class="glitch">Redirecting<span class="dots"></span></p>
+    <p style="font-size: 12px; margin-top: 20px; opacity: 0.5;">
+      an advanced, customizable, open source, free typing trainer with multiplayer battle mode.
+    </p>
+  </div>
+  
+  <script>
+    // Instant redirect for JavaScript-enabled browsers
+    // Social media crawlers (bots) don't execute JS, so they read meta tags
+    // Real users get instant redirect via JS
+    window.location.replace('https://keysandfingers.pages.dev');
+  </script>
+  
+  <!-- Fallback for browsers with JS disabled (uses meta refresh tag above) -->
+  <noscript>
+    <div style="text-align: center; padding: 20px;">
+      <p>JavaScript is disabled. Redirecting via meta tag...</p>
+      <p style="margin-top: 20px;">
+        If you are not redirected, <a href="https://keysandfingers.pages.dev" style="color: #3b82f6;">click here</a>.
+      </p>
+    </div>
+  </noscript>
+</body>
+</html>
