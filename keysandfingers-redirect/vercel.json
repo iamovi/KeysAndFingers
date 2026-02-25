@@ -2,16 +2,13 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "name": "keysandfingers",
   "version": 2,
-  
   "redirects": [
     {
       "source": "/:path*",
       "destination": "https://keysandfingers.pages.dev/:path*",
-      "permanent": false,
       "statusCode": 307
     }
   ],
-  
   "headers": [
     {
       "source": "/(.*)",
@@ -35,7 +32,6 @@
       ]
     }
   ],
-  
   "trailingSlash": false,
   "cleanUrls": true
 }
