@@ -5,4 +5,6 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electron', {
   platform: process.platform,
   retry: () => ipcRenderer.send('retry-connection'),
+  onSiteReady: (callback) => ipcRenderer.on('site-ready', callback),
+  splashFinished: () => ipcRenderer.send('splash-finished'),
 });

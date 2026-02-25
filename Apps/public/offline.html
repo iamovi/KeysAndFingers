@@ -1,85 +1,353 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Offline</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>オフライン - NO SIGNAL</title>
+  <style>
+    /* Local Font Definitions for Offline Support */
+    @font-face {
+      font-family: 'Bangers';
+      src: url('./fonts/bangers.woff2') format('woff2');
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'DotGothic16';
+      src: url('./fonts/dotgothic16.woff2') format('woff2');
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Permanent Marker';
+      src: url('./fonts/permanentmarker.woff2') format('woff2');
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'RocknRoll One';
+      src: url('./fonts/rocknrollone.ttf') format('truetype');
+      font-display: swap;
+    }
+
+    :root {
+      --manga-black: #000000;
+      --manga-white: #ffffff;
+      --manga-gray: #f0f0f0;
+      --manga-accent: #ff003c;
+      /* Authentic Manga screentone color */
+      --screentone: rgba(0, 0, 0, 0.15);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      width: 100%;
+      height: 100vh;
+      background-color: var(--manga-white);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'RocknRoll One', 'Arial Black', sans-serif;
+      color: var(--manga-black);
+    }
+
+    /* Essential Manga Screentone Patterns */
+    .halftone-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: radial-gradient(var(--screentone) 15%, transparent 20%);
+      background-size: 8px 8px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Dramatic Focus Lines (Impact Effect) */
+    .focus-lines {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 150vmax;
+      height: 150vmax;
+      transform: translate(-50%, -50%);
+      background-image: repeating-conic-gradient(from 0deg,
+          var(--manga-black) 0deg 0.5deg,
+          transparent 0.5deg 5deg);
+      opacity: 0.15;
+      z-index: 0;
+      animation: linePulse 0.1s infinite;
+    }
+
+    @keyframes linePulse {
+      0% {
+        transform: translate(-50%, -50%) rotate(0deg) scale(1);
       }
-      body {
-        width: 100%;
-        height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #f0f0f0;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+
+      50% {
+        transform: translate(-50%, -50%) rotate(0.5deg) scale(1.02);
       }
-      .offline-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 20px;
-        padding: 40px;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        max-width: 500px;
-        text-align: center;
+
+      100% {
+        transform: translate(-50%, -50%) rotate(-0.5deg) scale(1);
       }
-      .offline-icon {
-        font-size: 60px;
-        margin-bottom: 10px;
-        width: 100px;
-        height: 100px;
+    }
+
+    /* Floating Sound Effects (Onomatopoeia) */
+    .sfx {
+      position: absolute;
+      font-size: 3rem;
+      font-family: 'RocknRoll One', 'Arial Black', sans-serif;
+      font-weight: 900;
+      color: var(--manga-black);
+      opacity: 0.8;
+      pointer-events: none;
+      z-index: 2;
+      -webkit-text-stroke: 1px var(--manga-white);
+      text-shadow: 4px 4px 0px var(--manga-white);
+    }
+
+    .sfx-1 {
+      top: 15%;
+      left: 10%;
+      transform: rotate(-15deg);
+      font-size: 5rem;
+    }
+
+    /* ゴゴゴ */
+    .sfx-2 {
+      bottom: 20%;
+      right: 10%;
+      transform: rotate(10deg);
+      font-size: 4rem;
+    }
+
+    /* ズギューン */
+    .sfx-3 {
+      top: 10%;
+      right: 15%;
+      transform: rotate(20deg);
+      font-size: 3rem;
+    }
+
+    /* ドドド */
+
+    /* Panel Borders */
+    .main-panel {
+      position: relative;
+      z-index: 10;
+      background: var(--manga-white);
+      border: 6px solid var(--manga-black);
+      padding: 40px;
+      max-width: 600px;
+      width: 90%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 15px 15px 0px var(--manga-black);
+      transform: rotate(-1deg);
+    }
+
+    .main-panel::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+      border: 2px solid var(--manga-black);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* Character Illustration Area */
+    .character-frame {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      margin-bottom: 25px;
+      background: var(--manga-gray);
+      border: 4px solid var(--manga-black);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: rotate(2deg);
+    }
+
+    .alien-img {
+      width: 160px;
+      height: 160px;
+      filter: contrast(1.2) grayscale(1);
+      animation: impact 4s ease-in-out infinite;
+    }
+
+    @keyframes impact {
+
+      0%,
+      100% {
+        transform: scale(1) translate(0, 0);
       }
-      .offline-title {
-        font-size: 24px;
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 10px;
+
+      5% {
+        transform: scale(1.1) translate(2px, -2px);
       }
-      .offline-text {
-        font-size: 16px;
-        color: #666;
-        line-height: 1.5;
-        margin-bottom: 20px;
+
+      10% {
+        transform: scale(1) translate(-2px, 2px);
       }
-      .retry-btn {
-        padding: 12px 30px;
-        background: #667eea;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 16px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.3s ease;
-      }
-      .retry-btn:hover {
-        background: #5568d3;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="offline-container">
-      <img src="./alien.png" alt="Offline" class="offline-icon" />
-      <div class="offline-title">You're Offline</div>
-      <div class="offline-text">
-        It looks like you don't have an internet connection. Please check your connection and try again.
-      </div>
-      <button class="retry-btn" onclick="retryConnection()">Try Again</button>
+    }
+
+    /* Typography */
+    .japanese-title {
+      font-size: 1.5rem;
+      letter-spacing: 0.2rem;
+      margin-bottom: 5px;
+      font-weight: 900;
+    }
+
+    .main-heading {
+      font-family: 'Bangers', 'Impact', cursive;
+      font-size: 5.5rem;
+      line-height: 1;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      color: var(--manga-accent);
+      -webkit-text-stroke: 3px var(--manga-black);
+      text-shadow: 6px 6px 0px var(--manga-black);
+      transform: skew(-5deg);
+    }
+
+    .speech-bubble {
+      position: relative;
+      background: var(--manga-white);
+      border: 4px solid var(--manga-black);
+      padding: 20px;
+      margin-bottom: 30px;
+      font-family: 'DotGothic16', 'MS Gothic', monospace;
+      font-weight: bold;
+      font-size: 1.2rem;
+      text-align: center;
+      box-shadow: 6px 6px 0px var(--manga-black);
+    }
+
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      border-width: 20px 15px 0;
+      border-style: solid;
+      border-color: var(--manga-black) transparent transparent;
+      transform: translateX(-50%);
+    }
+
+    /* Button Styling */
+    .retry-btn {
+      background: var(--manga-black);
+      color: var(--manga-white);
+      padding: 15px 40px;
+      font-size: 2rem;
+      border: none;
+      cursor: pointer;
+      font-family: 'Bangers', 'Impact', cursive;
+      transition: all 0.1s;
+      position: relative;
+      box-shadow: 8px 8px 0px var(--manga-accent);
+    }
+
+    .retry-btn:hover {
+      transform: translate(-3px, -3px);
+      box-shadow: 11px 11px 0px var(--manga-accent);
+      background: var(--manga-accent);
+    }
+
+    .retry-btn:active {
+      transform: translate(4px, 4px);
+      box-shadow: 0px 0px 0px var(--manga-accent);
+    }
+
+    /* Scratch/Grunge Overlay */
+    .grunge {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      opacity: 0.05;
+      pointer-events: none;
+      z-index: 100;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="focus-lines"></div>
+  <div class="halftone-bg"></div>
+  <div class="grunge"></div>
+
+  <!-- Japanese Sound Effects -->
+  <div class="sfx sfx-1">ゴゴゴ</div>
+  <div class="sfx sfx-2">ズギーン</div>
+  <div class="sfx sfx-3">ドドド</div>
+
+  <div class="main-panel">
+    <div class="japanese-title">通信エラー発生！</div>
+
+    <div class="character-frame">
+      <img src="./alien.png" alt="Offline Character" class="alien-img">
     </div>
-  </body>
+
+    <h1 class="main-heading">OFFLINE!!</h1>
+
+    <div class="speech-bubble">
+      WHAT?! THE CONNECTION HAS BEEN CUT BY AN UNKNOWN FORCE!
+    </div>
+
+    <button class="retry-btn" onclick="retryConnection()">
+      TRY AGAIN!
+    </button>
+  </div>
+
   <script>
     function retryConnection() {
+      const btn = document.querySelector('.retry-btn');
+      const panel = document.querySelector('.main-panel');
+
+      // Visual feedback - Shake the whole panel
+      panel.animate([
+        { transform: 'rotate(-1deg) translate(2px, 2px)' },
+        { transform: 'rotate(-1deg) translate(-2px, -2px)' },
+        { transform: 'rotate(-1deg) translate(2px, -2px)' }
+      ], { duration: 100, iterations: 5 });
+
+      btn.innerText = 'LOADING...';
+      btn.style.pointerEvents = 'none';
+
+      // Electron Retry Logic
       if (window.electron && window.electron.retry) {
-        window.electron.retry();
+        setTimeout(() => {
+          window.electron.retry();
+        }, 600);
+      } else {
+        console.log('Retry triggered');
+        setTimeout(() => {
+          btn.innerText = 'TRY AGAIN!';
+          btn.style.pointerEvents = 'all';
+        }, 2000);
       }
     }
   </script>
+</body>
+
 </html>

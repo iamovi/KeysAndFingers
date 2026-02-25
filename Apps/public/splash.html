@@ -1,48 +1,134 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Loading</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Loading</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+    }
+
+    .splash-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(26, 26, 26, 0.95);
+      padding: 40px;
+      border-radius: 0;
+      box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.5);
+      width: 400px;
+      height: 400px;
+    }
+
+    .splash-icon {
+      width: 150px;
+      height: 150px;
+      margin-bottom: 30px;
+      animation: float 2s ease-in-out infinite;
+    }
+
+    .loading-container {
+      width: 100%;
+      position: relative;
+    }
+
+    .loading-text {
+      color: white;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .progress-bg {
+      width: 100%;
+      height: 12px;
+      background: #333;
+      border: 2px solid #fff;
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      background: #fff;
+      transition: width 0.1s ease;
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0);
       }
-      body {
-        width: 100%;
-        height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: transparent;
+
+      50% {
+        transform: translateY(-10px);
       }
-      .splash-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
-      .splash-icon {
-        width: 200px;
-        height: 200px;
-        animation: fadeIn 0.5s ease-in;
-      }
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: scale(0.8);
-        }
-        to {
-          opacity: 1;
-          transform: scale(1);
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="splash-container">
-      <img src="./alien.png" alt="Keys and Fingers" class="splash-icon" />
+    }
+  </style>
+</head>
+
+<body>
+  <div class="splash-container">
+    <img src="./alien.png" alt="Keys and Fingers" class="splash-icon" />
+    <div class="loading-text" id="status-text">00 / 100%</div>
+    <div class="progress-bg">
+      <div class="progress-bar" id="progress-bar"></div>
     </div>
-  </body>
+  </div>
+
+  <script>
+    const bar = document.getElementById('progress-bar');
+    const statusText = document.getElementById('status-text');
+    let progress = 0;
+    let isSiteReady = false;
+
+    // Listen for the site being ready in the background
+    if (window.electron && window.electron.onSiteReady) {
+      window.electron.onSiteReady(() => {
+        isSiteReady = true;
+      });
+    }
+
+    const interval = setInterval(() => {
+      // If we are at 99 and site isn't ready, wait there.
+      if (progress >= 99 && !isSiteReady) {
+        return;
+      }
+
+      if (progress >= 100) {
+        clearInterval(interval);
+        // Signal to main process that we are done
+        if (window.electron && window.electron.splashFinished) {
+          window.electron.splashFinished();
+        }
+      } else {
+        progress += 1; // Slow down slightly for smoother fill
+        bar.style.width = progress + '%';
+        const formattedProgress = progress.toString().padStart(2, '0');
+        statusText.innerText = `${formattedProgress} / 100%`;
+      }
+    }, 15); // Faster tick but smaller increment for smoothness
+  </script>
+</body>
+
 </html>

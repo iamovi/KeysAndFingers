@@ -1,7 +1,7 @@
 {
   "name": "keys-and-fingers",
-  "version": "1.0.0",
-  "description": "A glitch-themed typing speed test. Measure your WPM, accuracy, and improve your typing skills.",
+  "version": "1.1.0",
+  "description": "an advanced multiplayer type racing game.",
   "main": "main.js",
   "author": "Ovi ren",
   "license": "MIT",
@@ -42,7 +42,6 @@
     },
     "nsis": {
       "oneClick": true,
-      "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Keys&Fingers",
