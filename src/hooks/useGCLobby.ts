@@ -10,6 +10,7 @@ export interface GCUser {
     status: UserStatus;
     joinedAt: number;
     ip?: string;
+    isAdmin?: boolean;
 }
 
 export interface GCMessage {
@@ -54,6 +55,13 @@ const getStoredUserId = () => {
     return newId;
 };
 
+const getStoredAdminStatus = () => {
+    if (typeof window === 'undefined') return false;
+    const stored = localStorage.getItem('kf_gc_admin_secret');
+    const actual = import.meta.env.VITE_ADMIN_SECRET;
+    return !!(actual && stored === actual);
+};
+
 export const useGCLobby = (playerName: string | null) => {
     const [isConnected, setIsConnected] = useState(false);
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -63,7 +71,7 @@ export const useGCLobby = (playerName: string | null) => {
     const [error, setError] = useState<string | null>(null);
     const [challengeAccepted, setChallengeAccepted] = useState<{ roomCode: string; byName: string } | null>(null);
     const [challengeDeclined, setChallengeDeclined] = useState<string | null>(null);
-    const [isAdmin, setIsAdmin] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(getStoredAdminStatus());
 
     const channelRef = useRef<RealtimeChannel | null>(null);
     const myId = useRef<string>(getStoredUserId());
@@ -87,18 +95,22 @@ export const useGCLobby = (playerName: string | null) => {
 
 
     // saveToDb=true only for challenge-related system messages worth keeping in history
-    const addSystemMessage = useCallback((text: string, saveToDb = false, id?: string) => {
+    const addSystemMessage = useCallback(async (text: string, saveToDb = false, id?: string) => {
+        const msgId = id || createMessageId();
         const msg: GCMessage = {
-            id: id || createMessageId(),
+            id: msgId,
             senderId: 'system',
             senderName: 'System',
             text,
             timestamp: Date.now(),
             type: 'system',
         };
-        setMessages(prev => [...prev, msg].slice(-MAX_MESSAGES));
+        setMessages(prev => {
+            if (prev.some(m => m.id === msgId)) return prev;
+            return [...prev, msg].slice(-MAX_MESSAGES);
+        });
         if (saveToDb) {
-            void saveMessageToDB(msg);
+            await saveMessageToDB(msg);
         }
     }, [saveMessageToDB]);
 
@@ -174,7 +186,7 @@ export const useGCLobby = (playerName: string | null) => {
 
         channel.on('presence', { event: 'sync' }, () => {
             const state = channel.presenceState<GCPresence>();
-            const users = (Object.entries(state)
+            const users = Object.entries(state)
                 .map(([id, presences]) => {
                     const presence = presences[0];
                     if (!presence) return null;
@@ -184,9 +196,10 @@ export const useGCLobby = (playerName: string | null) => {
                         status: presence.status,
                         joinedAt: presence.joinedAt,
                         ip: presence.ip,
+                        isAdmin: presence.isAdmin,
                     } as GCUser;
                 })
-                .filter((user): user is GCUser => user !== null)) as GCUser[];
+                .filter((user): user is GCUser => user !== null);
             setOnlineUsers(users);
         });
 
@@ -234,10 +247,13 @@ export const useGCLobby = (playerName: string | null) => {
             }
 
             if (payload.type === 'challenge') {
+                const msgId = payload.msgId || payload.id;
+                if (loadedFromDB.current.has(msgId)) return;
+
                 // Show challenge message to everyone
                 if (payload.text) {
                     const msg: GCMessage = {
-                        id: payload.msgId || createMessageId(),
+                        id: msgId,
                         senderId: 'system',
                         senderName: 'System',
                         text: payload.text,
@@ -258,10 +274,13 @@ export const useGCLobby = (playerName: string | null) => {
             }
 
             if (payload.type === 'challenge-accepted') {
+                const msgId = payload.msgId || payload.id;
+                if (loadedFromDB.current.has(msgId)) return;
+
                 // Show accept message to everyone
                 if (payload.text) {
                     const msg: GCMessage = {
-                        id: payload.msgId || createMessageId(),
+                        id: msgId,
                         senderId: 'system',
                         senderName: 'System',
                         text: payload.text,
@@ -277,10 +296,13 @@ export const useGCLobby = (playerName: string | null) => {
             }
 
             if (payload.type === 'challenge-cancelled') {
+                const msgId = payload.msgId || payload.id;
+                if (loadedFromDB.current.has(msgId)) return;
+
                 // Show cancellation message to everyone in chat
                 if (payload.text) {
                     const msg: GCMessage = {
-                        id: payload.msgId || createMessageId(),
+                        id: msgId,
                         senderId: 'system',
                         senderName: 'System',
                         text: payload.text,
@@ -296,10 +318,13 @@ export const useGCLobby = (playerName: string | null) => {
             }
 
             if (payload.type === 'challenge-declined') {
+                const msgId = payload.msgId || payload.id;
+                if (loadedFromDB.current.has(msgId)) return;
+
                 // Show decline message to everyone
                 if (payload.text) {
                     const msg: GCMessage = {
-                        id: payload.msgId || createMessageId(),
+                        id: msgId,
                         senderId: 'system',
                         senderName: 'System',
                         text: payload.text,
@@ -374,7 +399,7 @@ export const useGCLobby = (playerName: string | null) => {
         }, 1000);
     }, []);
 
-    const sendMessage = useCallback((text: string) => {
+    const sendMessage = useCallback(async (text: string) => {
         if (!channelRef.current || !text.trim()) return false;
         const now = Date.now();
         if (now - lastMessageTime.current < MESSAGE_COOLDOWN_MS) return false;
@@ -396,12 +421,12 @@ export const useGCLobby = (playerName: string | null) => {
             event: 'gc',
             payload: { ...msg, type: 'chat' },
         });
-        saveMessageToDB(msg);
+        await saveMessageToDB(msg);
         return true;
-    }, [playerName, saveMessageToDB]);
+    }, [playerName, saveMessageToDB, isAdmin]);
 
     const sendChallenge = useCallback((targetId: string, targetName: string, roomCode: string): Promise<void> => {
-        return new Promise((resolve) => {
+        return new Promise(async (resolve) => {
             if (!channelRef.current) { resolve(); return; }
 
             const msgText = `⚔️ ${playerName} challenged ${targetName}!`;
@@ -409,7 +434,7 @@ export const useGCLobby = (playerName: string | null) => {
             const timestamp = Date.now();
 
             // Save challenge system message to DB and show locally
-            addSystemMessage(msgText, true, msgId);
+            await addSystemMessage(msgText, true, msgId);
 
             channelRef.current.send({
                 type: 'broadcast',
@@ -427,10 +452,10 @@ export const useGCLobby = (playerName: string | null) => {
                 },
             }).then(() => resolve()).catch(() => resolve());
         });
-    }, [playerName, addSystemMessage]);
+    }, [playerName, addSystemMessage, isAdmin]);
 
     const acceptChallenge = useCallback((): Promise<string | null> => {
-        return new Promise((resolve) => {
+        return new Promise(async (resolve) => {
             if (!pendingChallenge || !channelRef.current) { resolve(null); return; }
             const code = pendingChallenge.roomCode;
             const from = pendingChallenge.from;
@@ -441,7 +466,7 @@ export const useGCLobby = (playerName: string | null) => {
             const timestamp = Date.now();
 
             setPendingChallenge(null);
-            addSystemMessage(msgText, true, msgId);
+            await addSystemMessage(msgText, true, msgId);
 
             channelRef.current.send({
                 type: 'broadcast',
@@ -458,9 +483,9 @@ export const useGCLobby = (playerName: string | null) => {
                 },
             }).then(() => resolve(code)).catch(() => resolve(code));
         });
-    }, [pendingChallenge, playerName, addSystemMessage]);
+    }, [pendingChallenge, playerName, addSystemMessage, isAdmin]);
 
-    const declineChallenge = useCallback(() => {
+    const declineChallenge = useCallback(async () => {
         if (!pendingChallenge || !channelRef.current) return;
 
         const msgText = `❌ ${playerName} declined ${pendingChallenge.fromName}'s challenge`;
@@ -468,7 +493,7 @@ export const useGCLobby = (playerName: string | null) => {
         const timestamp = Date.now();
 
         // Save decline system message to DB and show locally
-        addSystemMessage(msgText, true, msgId);
+        await addSystemMessage(msgText, true, msgId);
 
         channelRef.current.send({
             type: 'broadcast',
@@ -485,7 +510,7 @@ export const useGCLobby = (playerName: string | null) => {
             },
         });
         setPendingChallenge(null);
-    }, [pendingChallenge, playerName, addSystemMessage]);
+    }, [pendingChallenge, playerName, addSystemMessage, isAdmin]);
 
     const clearChallengeAccepted = useCallback(() => {
         setChallengeAccepted(null);
@@ -495,17 +520,17 @@ export const useGCLobby = (playerName: string | null) => {
         setChallengeDeclined(null);
     }, []);
 
-    const cancelChallenge = useCallback((targetId: string, targetName: string, isTimeout = false) => {
+    const cancelChallenge = useCallback(async (targetId: string, targetName: string, isTimeout = false) => {
         if (!channelRef.current) return;
 
         const msgText = isTimeout
-            ? `⌛ Challenge invite against ${targetName} expired`
+            ? `⌛ Challenge invite from ${playerName} against ${targetName} expired`
             : `❌ ${playerName} cancelled the challenge against ${targetName}`;
         const msgId = createMessageId();
         const timestamp = Date.now();
 
         // Show locally to the challenger
-        addSystemMessage(msgText, true, msgId);
+        await addSystemMessage(msgText, true, msgId);
 
         // Broadcast to everyone else
         channelRef.current.send({
@@ -521,7 +546,7 @@ export const useGCLobby = (playerName: string | null) => {
                 timestamp,
             },
         });
-    }, [playerName, addSystemMessage]);
+    }, [playerName, addSystemMessage, isAdmin]);
 
     const updateStatus = useCallback((status: UserStatus) => {
         if (!channelRef.current) return;
@@ -542,6 +567,7 @@ export const useGCLobby = (playerName: string | null) => {
     const verifyAdmin = useCallback((secret: string) => {
         const actual = import.meta.env.VITE_ADMIN_SECRET;
         if (actual && secret === actual) {
+            localStorage.setItem('kf_gc_admin_secret', secret);
             setIsAdmin(true);
             // Re-track with admin status
             if (channelRef.current) {
@@ -596,15 +622,31 @@ export const useGCLobby = (playerName: string | null) => {
         }
     }, [isAdmin]);
 
+    const logoutAdmin = useCallback(() => {
+        localStorage.removeItem('kf_gc_admin_secret');
+        setIsAdmin(false);
+        // Re-track with non-admin status
+        if (channelRef.current) {
+            const currentState = channelRef.current.presenceState<GCPresence>();
+            const myPresence = currentState[myId.current]?.[0];
+            channelRef.current.track({
+                name: playerName,
+                status: myPresence?.status || 'idle',
+                joinedAt: Date.now(),
+                ip: myPresence?.ip || 'unknown',
+                isAdmin: false,
+            });
+        }
+        addSystemMessage('Admin session terminated');
+    }, [playerName, addSystemMessage]);
+
     useEffect(() => {
         if (!pendingChallenge) return;
-        const fromName = pendingChallenge.fromName;
         const t = setTimeout(() => {
             setPendingChallenge(null);
-            addSystemMessage(`⌛ Challenge invite from ${fromName} expired`, true);
         }, 15000);
         return () => clearTimeout(t);
-    }, [pendingChallenge, addSystemMessage]);
+    }, [pendingChallenge]);
 
     useEffect(() => {
         return () => {
@@ -639,6 +681,7 @@ export const useGCLobby = (playerName: string | null) => {
         updateStatus,
         cancelChallenge,
         verifyAdmin,
+        logoutAdmin,
         deleteMessage,
     };
 };

@@ -78,6 +78,7 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
         cancelChallenge,
         isAdmin,
         verifyAdmin,
+        logoutAdmin,
         deleteMessage,
         error,
         myId,
@@ -209,11 +210,11 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
                 onDismiss: () => declineChallenge(),
             }
         );
-    }, [acceptChallenge, declineChallenge, leaveSilently, onJoinVsFromGC, pendingChallenge]);
+    }, [acceptChallenge, declineChallenge, leaveSilently, onJoinVsFromGC, pendingChallenge, isAdmin]);
 
-    const handleSend = useCallback(() => {
+    const handleSend = useCallback(async () => {
         if (!input.trim()) return;
-        const sent = sendMessage(input.trim());
+        const sent = await sendMessage(input.trim());
         if (sent) {
             setInput('');
         } else {
@@ -261,7 +262,7 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
         } finally {
             setChallenging(null);
         }
-    }, [sendChallenge, onCreateChallengeRoom, updateStatus]);
+    }, [sendChallenge, onCreateChallengeRoom, updateStatus, cancelChallenge]);
 
     const otherUsers = onlineUsers.filter(u => u.id !== myId);
     const myUser = onlineUsers.find(u => u.id === myId);
@@ -552,7 +553,7 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
                                 <div className="flex items-center gap-2">
                                     <StatusDot status={myUser.status} />
                                     <span className="text-xs font-mono font-bold truncate flex-1">{playerName}</span>
-                                    <Crown className="h-3 w-3 text-amber-500 shrink-0" />
+                                    {isAdmin && <Crown className="h-3 w-3 text-amber-500 shrink-0 shadow-[0_0_8px_rgba(245,158,11,0.3)]" />}
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <StatusLabel status={myUser.status} />
@@ -636,12 +637,24 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
                                     <p className="text-[10px] font-mono text-muted-foreground uppercase opacity-50 tracking-tighter">Real-time System Monitor</p>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setShowAdminDashboard(false)}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded font-mono text-xs transition-colors"
-                            >
-                                <X className="h-4 w-4" /> CLOSE
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        logoutAdmin();
+                                        setShowAdminDashboard(false);
+                                        toast.success('Admin authorization revoked.');
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded font-mono text-xs transition-colors"
+                                >
+                                    <Shield className="h-4 w-4" /> REVOKE ACCESS
+                                </button>
+                                <button
+                                    onClick={() => setShowAdminDashboard(false)}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded font-mono text-xs transition-colors"
+                                >
+                                    <X className="h-4 w-4" /> CLOSE
+                                </button>
+                            </div>
                         </div>
 
                         <div className="flex-1 min-h-0 flex overflow-hidden">
@@ -717,7 +730,10 @@ const UsersList = ({
             >
                 <StatusDot status={user.status} />
                 <div className="flex-1 min-w-0">
-                    <p className="text-xs font-mono font-bold truncate">{user.name}</p>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <p className="text-xs font-mono font-bold truncate">{user.name}</p>
+                        {user.isAdmin && <Shield className="h-2.5 w-2.5 text-amber-500 shrink-0" />}
+                    </div>
                     <StatusLabel status={user.status} />
                 </div>
                 {user.status === 'idle' && (
