@@ -34,6 +34,10 @@ CREATE POLICY "public insert"
   ON gc_messages FOR INSERT
   WITH CHECK (true);
 
+CREATE POLICY "public update"
+  ON gc_messages FOR UPDATE
+  USING (true);
+
 
 -- 4. Auto-delete messages older than 7 days
 -- Runs every hour via pg_cron (built into Supabase free tier)

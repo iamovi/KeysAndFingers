@@ -13,6 +13,9 @@ import {
     X,
     Shield,
     Clock,
+    Lock,
+    Trash2,
+    Activity,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -71,6 +74,11 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
         pendingChallenge,
         challengeAccepted,
         challengeDeclined,
+        updateStatus,
+        cancelChallenge,
+        isAdmin,
+        verifyAdmin,
+        deleteMessage,
         error,
         myId,
         join,
@@ -82,16 +90,18 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
         declineChallenge,
         clearChallengeAccepted,
         clearChallengeDeclined,
-        updateStatus,
-        cancelChallenge,
     } = useGCLobby(playerName);
 
     const [input, setInput] = useState('');
     const [activeTab, setActiveTab] = useState<'chat' | 'users'>('chat');
     const [challengingUser, setChallenging] = useState<string | null>(null);
     const [isChallenging, setIsChallenging] = useState(false);
+    const [showAdminEntry, setShowAdminEntry] = useState(false);
+    const [showAdminDashboard, setShowAdminDashboard] = useState(false);
+    const [adminKeyInput, setAdminKeyInput] = useState('');
     const challengeTargetIdRef = useRef<string | null>(null);
     const challengeTargetNameRef = useRef<string | null>(null);
+    const challengeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const handleSetName = (e: React.FormEvent) => {
@@ -219,7 +229,6 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
     };
 
     // Auto-reset busy status after 30s if opponent never responds
-    const challengeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Challenger: send challenge and STAY in GC waiting for response
     const handleChallenge = useCallback(async (user: GCUser) => {
@@ -328,6 +337,16 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => isAdmin ? setShowAdminDashboard(true) : setShowAdminEntry(true)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-mono rounded border transition-all ${isAdmin
+                            ? 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20'
+                            : 'bg-secondary/40 border-border text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                            }`}
+                    >
+                        <Shield className="h-3 w-3" />
+                        <span>{isAdmin ? 'ADMIN AREA!' : 'Admin Area!'}</span>
+                    </button>
                     {myUser && (
                         <button
                             onClick={() => { leave(); onResetName(); }}
@@ -436,17 +455,36 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
                                         >
                                             {msg.senderName[0]?.toUpperCase()}
                                         </div>
-                                        <div className={`max-w-[75%] ${msg.senderId === myId ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
-                                            <span className={`text-[9px] font-mono text-muted-foreground ${msg.senderId === myId ? 'text-right' : ''}`}>
-                                                {msg.senderId === myId ? 'you' : msg.senderName}
-                                            </span>
-                                            <div className={`px-3 py-1.5 rounded-lg text-xs font-mono leading-relaxed break-words
-                                                ${msg.senderId === myId
-                                                    ? 'bg-amber-500/15 border border-amber-500/20 text-foreground rounded-tr-sm'
-                                                    : 'bg-secondary/60 border border-border text-foreground rounded-tl-sm'
-                                                }`}
-                                            >
-                                                {msg.text}
+                                        <div className={`flex flex-col gap-1 ${msg.senderId === myId ? 'items-end' : 'items-start'}`}>
+                                            <div className={`flex items-center gap-1.5 ${msg.senderId === myId ? 'flex-row-reverse' : ''}`}>
+                                                <span className={`text-[9px] font-mono text-muted-foreground ${msg.senderId === myId ? 'text-right' : ''}`}>
+                                                    {msg.senderId === myId ? 'you' : msg.senderName}
+                                                </span>
+                                                {msg.isAdmin && (
+                                                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-amber-500/10 border border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.1)]">
+                                                        <Shield className="h-[9px] w-[9px] text-amber-500" />
+                                                        <span className="text-[8px] font-mono font-bold text-amber-500 leading-none">ADMIN</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className={`px-3 py-1.5 rounded-lg text-xs font-mono leading-relaxed break-words
+                                                    ${msg.senderId === myId
+                                                        ? 'bg-amber-500/15 border border-amber-500/20 text-foreground rounded-tr-sm'
+                                                        : 'bg-secondary/60 border border-border text-foreground rounded-tl-sm'
+                                                    }`}
+                                                >
+                                                    {msg.text}
+                                                </div>
+                                                {isAdmin && msg.senderId !== 'system' && msg.text !== 'This message is deleted by Admin' && (
+                                                    <button
+                                                        onClick={() => deleteMessage(msg.id)}
+                                                        className="p-1.5 rounded bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-all opacity-0 group-hover:opacity-100"
+                                                        title="Delete Message"
+                                                    >
+                                                        <Trash2 className="h-3 w-3" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -539,6 +577,123 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
                     </div>
                 </div>
             </div>
+
+            {/* Admin Password Entry */}
+            {showAdminEntry && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-card border-2 border-border p-6 rounded-xl shadow-2xl max-w-sm w-full space-y-4 animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-red-500">
+                                <Lock className="h-5 w-5" />
+                                <h3 className="font-mono font-bold">Encrypted Area</h3>
+                            </div>
+                            <button onClick={() => setShowAdminEntry(false)} className="text-muted-foreground hover:text-foreground">
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+                        <p className="text-xs font-mono text-muted-foreground">Please enter the secret master key to access administrative controls.</p>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            if (verifyAdmin(adminKeyInput)) {
+                                setShowAdminEntry(false);
+                                setShowAdminDashboard(true);
+                                setAdminKeyInput('');
+                                toast.success('Access Granted. Welcome, Admin.');
+                            } else {
+                                toast.error('Access Denied. Incorrect key.');
+                            }
+                        }}>
+                            <input
+                                type="password"
+                                value={adminKeyInput}
+                                onChange={e => setAdminKeyInput(e.target.value)}
+                                placeholder="SECRET_KEY"
+                                autoFocus
+                                className="w-full bg-background border border-border rounded-lg px-4 py-2.5 font-mono text-sm focus:outline-none focus:border-red-500 transition-all text-center tracking-widest"
+                            />
+                            <button
+                                type="submit"
+                                className="w-full mt-4 py-3 bg-red-600/90 hover:bg-red-600 text-white font-mono font-bold rounded-lg transition-all shadow-lg"
+                            >
+                                AUTHORIZE ACCESS
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Admin Dashboard */}
+            {showAdminDashboard && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-card/95 border border-red-500/20 w-full max-w-4xl h-[80vh] rounded-xl shadow-[0_0_50px_rgba(239,68,68,0.1)] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300">
+                        <div className="p-4 border-b border-border flex items-center justify-between bg-zinc-950/50">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-red-500/10 rounded-lg">
+                                    <Activity className="h-5 w-5 text-red-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-mono font-bold text-red-500">ADMIN CONTROL CENTER</h3>
+                                    <p className="text-[10px] font-mono text-muted-foreground uppercase opacity-50 tracking-tighter">Real-time System Monitor</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowAdminDashboard(false)}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded font-mono text-xs transition-colors"
+                            >
+                                <X className="h-4 w-4" /> CLOSE
+                            </button>
+                        </div>
+
+                        <div className="flex-1 min-h-0 flex overflow-hidden">
+                            {/* Player Logs */}
+                            <div className="flex-1 flex flex-col border-r border-border">
+                                <div className="p-3 bg-secondary/20 border-b border-border">
+                                    <span className="text-[10px] font-mono font-bold text-muted-foreground uppercase">Active Users & IP Trace</span>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                                    {onlineUsers.map(user => (
+                                        <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-zinc-950/40 border border-white/5 group hover:border-red-500/20 transition-all">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-2 h-2 rounded-full ${user.status === 'idle' ? 'bg-green-500' : 'bg-red-500'} shadow-[0_0_8px_currentColor]`} />
+                                                <div>
+                                                    <p className="font-mono font-bold text-xs">{user.name}</p>
+                                                    <p className="text-[9px] font-mono text-muted-foreground tabular-nums">ID: {user.id}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-[10px] font-mono text-red-500/70 bg-red-500/5 px-2 py-0.5 rounded border border-red-500/10">{user.ip || '---.---.---.---'}</p>
+                                                <p className="text-[9px] font-mono text-muted-foreground uppercase mt-1">{user.status}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* System Status */}
+                            <div className="w-64 bg-zinc-950/20 p-4 space-y-6">
+                                <div>
+                                    <h4 className="text-[10px] font-mono font-bold text-muted-foreground mb-3 uppercase tracking-widest">Global Stats</h4>
+                                    <div className="space-y-3">
+                                        <div className="p-3 rounded bg-zinc-950/50 border border-white/5">
+                                            <p className="text-[9px] font-mono text-muted-foreground uppercase">Online Players</p>
+                                            <p className="text-xl font-mono font-bold text-red-500">{onlineUsers.length}</p>
+                                        </div>
+                                        <div className="p-3 rounded bg-zinc-950/50 border border-white/5">
+                                            <p className="text-[9px] font-mono text-muted-foreground uppercase">Messages Today</p>
+                                            <p className="text-xl font-mono font-bold text-red-500">{messages.length}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/10">
+                                    <p className="text-[9px] font-mono text-red-500 leading-relaxed italic">
+                                        Admin mode grants you full visibility of client IP addresses and message moderation. Use responsibly.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -9,6 +9,7 @@ export interface GCUser {
     name: string;
     status: UserStatus;
     joinedAt: number;
+    ip?: string;
 }
 
 export interface GCMessage {
@@ -18,6 +19,7 @@ export interface GCMessage {
     text: string;
     timestamp: number;
     type: 'chat' | 'system' | 'challenge';
+    isAdmin?: boolean;
 }
 
 export interface ChallengeInvite {
@@ -31,6 +33,8 @@ interface GCPresence {
     name: string;
     status: UserStatus;
     joinedAt: number;
+    ip?: string;
+    isAdmin?: boolean;
 }
 
 const GC_CHANNEL = 'public-gc-lobby';
@@ -59,6 +63,7 @@ export const useGCLobby = (playerName: string | null) => {
     const [error, setError] = useState<string | null>(null);
     const [challengeAccepted, setChallengeAccepted] = useState<{ roomCode: string; byName: string } | null>(null);
     const [challengeDeclined, setChallengeDeclined] = useState<string | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     const channelRef = useRef<RealtimeChannel | null>(null);
     const myId = useRef<string>(getStoredUserId());
@@ -151,6 +156,13 @@ export const useGCLobby = (playerName: string | null) => {
 
         await loadHistory();
 
+        let myIp = 'unknown';
+        try {
+            const res = await fetch('https://api.ipify.org?format=json');
+            const data = await res.json();
+            myIp = data.ip;
+        } catch (e) { console.warn('IP fetch failed', e); }
+
         const channel = supabase.channel(GC_CHANNEL, {
             config: {
                 presence: { key: myId.current },
@@ -162,7 +174,7 @@ export const useGCLobby = (playerName: string | null) => {
 
         channel.on('presence', { event: 'sync' }, () => {
             const state = channel.presenceState<GCPresence>();
-            const users: GCUser[] = Object.entries(state)
+            const users = (Object.entries(state)
                 .map(([id, presences]) => {
                     const presence = presences[0];
                     if (!presence) return null;
@@ -171,9 +183,10 @@ export const useGCLobby = (playerName: string | null) => {
                         name: presence.name,
                         status: presence.status,
                         joinedAt: presence.joinedAt,
-                    };
+                        ip: presence.ip,
+                    } as GCUser;
                 })
-                .filter((user): user is GCUser => user !== null);
+                .filter((user): user is GCUser => user !== null)) as GCUser[];
             setOnlineUsers(users);
         });
 
@@ -215,6 +228,7 @@ export const useGCLobby = (playerName: string | null) => {
                     text: payload.text,
                     timestamp: payload.timestamp,
                     type: 'chat',
+                    isAdmin: payload.isAdmin,
                 };
                 setMessages(prev => [...prev, msg].slice(-MAX_MESSAGES));
             }
@@ -300,6 +314,14 @@ export const useGCLobby = (playerName: string | null) => {
                     setChallengeDeclined(payload.fromName);
                 }
             }
+
+            if (payload.type === 'message-deleted') {
+                setMessages(prev => prev.map(m =>
+                    m.id === payload.msgId
+                        ? { ...m, text: 'This message is deleted by Admin' }
+                        : m
+                ));
+            }
         });
 
         channel.subscribe(async (status) => {
@@ -308,6 +330,8 @@ export const useGCLobby = (playerName: string | null) => {
                     name: playerName,
                     status: 'idle' as UserStatus,
                     joinedAt: Date.now(),
+                    ip: myIp,
+                    isAdmin,
                 });
                 setIsConnected(true);
                 addSystemMessage('You joined the public lobby');
@@ -316,7 +340,7 @@ export const useGCLobby = (playerName: string | null) => {
                 setIsConnected(false);
             }
         });
-    }, [playerName, addSystemMessage, loadHistory]);
+    }, [playerName, addSystemMessage, loadHistory, isAdmin]);
 
     const leave = useCallback(() => {
         suppressCleanupRef.current = true;
@@ -363,6 +387,7 @@ export const useGCLobby = (playerName: string | null) => {
             text: text.trim(),
             timestamp: now,
             type: 'chat',
+            isAdmin,
         };
 
         setMessages(prev => [...prev, msg].slice(-MAX_MESSAGES));
@@ -500,12 +525,76 @@ export const useGCLobby = (playerName: string | null) => {
 
     const updateStatus = useCallback((status: UserStatus) => {
         if (!channelRef.current) return;
+
+        // Try to get IP from current presence to maintain it
+        const currentState = channelRef.current.presenceState<GCPresence>();
+        const myPresence = currentState[myId.current]?.[0];
+
         channelRef.current.track({
             name: playerName,
             status,
             joinedAt: Date.now(),
+            ip: myPresence?.ip || 'unknown',
+            isAdmin,
         });
+    }, [playerName, isAdmin]);
+
+    const verifyAdmin = useCallback((secret: string) => {
+        const actual = import.meta.env.VITE_ADMIN_SECRET;
+        if (actual && secret === actual) {
+            setIsAdmin(true);
+            // Re-track with admin status
+            if (channelRef.current) {
+                const currentState = channelRef.current.presenceState<GCPresence>();
+                const myPresence = currentState[myId.current]?.[0];
+                channelRef.current.track({
+                    name: playerName,
+                    status: myPresence?.status || 'idle',
+                    joinedAt: Date.now(),
+                    ip: myPresence?.ip || 'unknown',
+                    isAdmin: true,
+                });
+            }
+            return true;
+        }
+        return false;
     }, [playerName]);
+
+    const deleteMessage = useCallback(async (msgId: string) => {
+        if (!isAdmin || !channelRef.current) return;
+
+        try {
+            // 1. Update DB
+            const { error: updateError } = await supabase
+                .from('gc_messages')
+                .update({ text: 'This message is deleted by Admin' })
+                .eq('id', msgId);
+
+            if (updateError) throw updateError;
+
+            // 2. Broadcast to all clients
+            channelRef.current.send({
+                type: 'broadcast',
+                event: 'gc',
+                payload: {
+                    type: 'message-deleted',
+                    msgId,
+                },
+            });
+
+            // 3. Update locally
+            setMessages(prev => prev.map(m =>
+                m.id === msgId
+                    ? { ...m, text: 'This message is deleted by Admin' }
+                    : m
+            ));
+
+            return true;
+        } catch (e) {
+            console.warn('Delete failed:', e);
+            return false;
+        }
+    }, [isAdmin]);
 
     useEffect(() => {
         if (!pendingChallenge) return;
@@ -535,6 +624,7 @@ export const useGCLobby = (playerName: string | null) => {
         pendingChallenge,
         challengeAccepted,
         challengeDeclined,
+        isAdmin,
         error,
         myId: myId.current,
         join,
@@ -548,5 +638,7 @@ export const useGCLobby = (playerName: string | null) => {
         clearChallengeDeclined,
         updateStatus,
         cancelChallenge,
+        verifyAdmin,
+        deleteMessage,
     };
 };
