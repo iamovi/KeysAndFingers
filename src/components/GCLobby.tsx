@@ -40,6 +40,27 @@ const StatusLabel = ({ status }: { status: 'idle' | 'busy' | 'in-race' }) => {
     return <span className={`text-[9px] font-mono uppercase ${colors[status]}`}>{labels[status]}</span>;
 };
 
+const ChallengeCountdown = ({ duration, onComplete }: { duration: number; onComplete?: () => void }) => {
+    const [timeLeft, setTimeLeft] = useState(duration);
+
+    useEffect(() => {
+        if (timeLeft <= 0) {
+            onComplete?.();
+            return;
+        }
+        const timer = setInterval(() => {
+            setTimeLeft(prev => Math.max(0, prev - 1));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [timeLeft, onComplete]);
+
+    return (
+        <span className="text-[10px] font-mono text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 tabular-nums">
+            {timeLeft}s
+        </span>
+    );
+};
+
 const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCreateChallengeRoom }: GCLobbyProps) => {
     const [localName, setLocalName] = useState('');
     const {
@@ -137,11 +158,14 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
         if (!pendingChallenge) return;
         toast(
             <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                    <Swords className="h-4 w-4 text-amber-500 shrink-0" />
-                    <span className="text-sm font-mono font-bold">
-                        {pendingChallenge.fromName} challenged you!
-                    </span>
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <Swords className="h-4 w-4 text-amber-500 shrink-0" />
+                        <span className="text-sm font-mono font-bold">
+                            {pendingChallenge.fromName} challenged you!
+                        </span>
+                    </div>
+                    <ChallengeCountdown duration={15} />
                 </div>
                 <div className="flex gap-2 mt-1">
                     <button
@@ -171,7 +195,7 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
             </div>,
             {
                 id: 'gc-challenge',
-                duration: 30000,
+                duration: 15000,
                 onDismiss: () => declineChallenge(),
             }
         );
@@ -209,20 +233,20 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
             challengeTargetNameRef.current = user.name;
             updateStatus('busy'); // show as busy while waiting for opponent response
 
-            // Auto-reset after 30s if no response (matches receiver timeout)
+            // Auto-reset after 15s if no response (matches receiver timeout)
             if (challengeTimeoutRef.current) clearTimeout(challengeTimeoutRef.current);
             challengeTimeoutRef.current = setTimeout(() => {
                 setIsChallenging(false);
                 sessionStorage.removeItem('kf_gc_host_code');
                 if (challengeTargetIdRef.current && challengeTargetNameRef.current) {
-                    cancelChallenge(challengeTargetIdRef.current, challengeTargetNameRef.current);
+                    cancelChallenge(challengeTargetIdRef.current, challengeTargetNameRef.current, true);
                     challengeTargetIdRef.current = null;
                     challengeTargetNameRef.current = null;
                 }
                 updateStatus('idle');
                 toast.error('Challenge expired — no response');
                 challengeTimeoutRef.current = null;
-            }, 30000);
+            }, 15000);
         } catch {
             toast.error('Failed to send challenge');
         } finally {
@@ -307,7 +331,7 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
                     {myUser && (
                         <button
                             onClick={() => { leave(); onResetName(); }}
-                            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/40 border border-border hover:bg-secondary/60 transition-colors group"
+                            className="flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-secondary/40 border border-border hover:bg-secondary/60 transition-colors group shrink-0"
                         >
                             <StatusDot status={myUser.status} />
                             <span className="text-xs font-mono font-bold">{playerName}</span>
@@ -331,8 +355,9 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
                         <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-amber-500 animate-pulse shrink-0" />
                             <span className="text-xs font-mono text-amber-500">
-                                Waiting for opponent to accept your challenge...
+                                Waiting for opponent to accept...
                             </span>
+                            <ChallengeCountdown duration={15} />
                         </div>
                         <button
                             onClick={() => {

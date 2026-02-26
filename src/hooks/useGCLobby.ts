@@ -66,6 +66,21 @@ export const useGCLobby = (playerName: string | null) => {
     const suppressCleanupRef = useRef(false);
     const loadedFromDB = useRef<Set<string>>(new Set());
 
+    // Save chat message to DB (fire and forget)
+    const saveMessageToDB = useCallback(async (msg: GCMessage) => {
+        try {
+            await supabase.from('gc_messages').insert({
+                id: msg.id,
+                sender_id: msg.senderId,
+                sender_name: msg.senderName,
+                text: msg.text,
+            });
+        } catch (e) {
+            console.warn('GC message save failed:', e);
+        }
+    }, []);
+
+
     // saveToDb=true only for challenge-related system messages worth keeping in history
     const addSystemMessage = useCallback((text: string, saveToDb = false, id?: string) => {
         const msg: GCMessage = {
@@ -78,21 +93,9 @@ export const useGCLobby = (playerName: string | null) => {
         };
         setMessages(prev => [...prev, msg].slice(-MAX_MESSAGES));
         if (saveToDb) {
-            void supabase
-                .from('gc_messages')
-                .insert({
-                    id: msg.id,
-                    sender_id: 'system',
-                    sender_name: 'System',
-                    text: msg.text,
-                })
-                .then(({ error: insertError }) => {
-                    if (insertError) {
-                        console.warn('GC system message save failed:', insertError.message);
-                    }
-                });
+            void saveMessageToDB(msg);
         }
-    }, []);
+    }, [saveMessageToDB]);
 
     // Load last 7 days of messages from Supabase DB
     const loadHistory = useCallback(async () => {
@@ -103,7 +106,7 @@ export const useGCLobby = (playerName: string | null) => {
                 .from('gc_messages')
                 .select('*')
                 .gte('created_at', sevenDaysAgo)
-                .order('created_at', { ascending: true })
+                .order('created_at', { ascending: false })
                 .limit(200);
 
             if (dbError) {
@@ -112,7 +115,7 @@ export const useGCLobby = (playerName: string | null) => {
             }
 
             if (data && data.length > 0) {
-                const historyMessages: GCMessage[] = data.map(row => ({
+                const historyMessages: GCMessage[] = data.reverse().map(row => ({
                     id: row.id,
                     senderId: row.sender_id,
                     senderName: row.sender_name,
@@ -140,19 +143,6 @@ export const useGCLobby = (playerName: string | null) => {
         }
     }, []);
 
-    // Save chat message to DB (fire and forget)
-    const saveMessageToDB = useCallback(async (msg: GCMessage) => {
-        try {
-            await supabase.from('gc_messages').insert({
-                id: msg.id,
-                sender_id: msg.senderId,
-                sender_name: msg.senderName,
-                text: msg.text,
-            });
-        } catch (e) {
-            console.warn('GC message save failed:', e);
-        }
-    }, []);
 
     const join = useCallback(async () => {
         if (!playerName || channelRef.current) return;
@@ -448,7 +438,7 @@ export const useGCLobby = (playerName: string | null) => {
     const declineChallenge = useCallback(() => {
         if (!pendingChallenge || !channelRef.current) return;
 
-        const msgText = `${playerName} declined ${pendingChallenge.fromName}'s challenge`;
+        const msgText = `❌ ${playerName} declined ${pendingChallenge.fromName}'s challenge`;
         const msgId = createMessageId();
         const timestamp = Date.now();
 
@@ -480,10 +470,12 @@ export const useGCLobby = (playerName: string | null) => {
         setChallengeDeclined(null);
     }, []);
 
-    const cancelChallenge = useCallback((targetId: string, targetName: string) => {
+    const cancelChallenge = useCallback((targetId: string, targetName: string, isTimeout = false) => {
         if (!channelRef.current) return;
 
-        const msgText = `❌ ${playerName} cancelled the challenge against ${targetName}`;
+        const msgText = isTimeout
+            ? `⌛ Challenge invite against ${targetName} expired`
+            : `❌ ${playerName} cancelled the challenge against ${targetName}`;
         const msgId = createMessageId();
         const timestamp = Date.now();
 
@@ -517,10 +509,11 @@ export const useGCLobby = (playerName: string | null) => {
 
     useEffect(() => {
         if (!pendingChallenge) return;
+        const fromName = pendingChallenge.fromName;
         const t = setTimeout(() => {
             setPendingChallenge(null);
-            addSystemMessage('Challenge invite expired');
-        }, 30000);
+            addSystemMessage(`⌛ Challenge invite from ${fromName} expired`, true);
+        }, 15000);
         return () => clearTimeout(t);
     }, [pendingChallenge, addSystemMessage]);
 
