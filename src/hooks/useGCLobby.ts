@@ -39,7 +39,7 @@ interface GCPresence {
 }
 
 const GC_CHANNEL = 'public-gc-lobby';
-const MAX_MESSAGES = 200;
+const PAGE_SIZE = 100;
 const MESSAGE_COOLDOWN_MS = 1500;
 const createMessageId = () =>
     typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
@@ -72,12 +72,15 @@ export const useGCLobby = (playerName: string | null) => {
     const [challengeAccepted, setChallengeAccepted] = useState<{ roomCode: string; byName: string } | null>(null);
     const [challengeDeclined, setChallengeDeclined] = useState<string | null>(null);
     const [isAdmin, setIsAdmin] = useState(getStoredAdminStatus());
+    const [totalMessages, setTotalMessages] = useState(0);
 
+    const [hasMore, setHasMore] = useState(true);
     const channelRef = useRef<RealtimeChannel | null>(null);
     const myId = useRef<string>(getStoredUserId());
     const lastMessageTime = useRef<number>(0);
     const suppressCleanupRef = useRef(false);
     const loadedFromDB = useRef<Set<string>>(new Set());
+    const oldestTimestampRef = useRef<string | null>(null);
 
     // Save chat message to DB (fire and forget)
     const saveMessageToDB = useCallback(async (msg: GCMessage) => {
@@ -107,24 +110,42 @@ export const useGCLobby = (playerName: string | null) => {
         };
         setMessages(prev => {
             if (prev.some(m => m.id === msgId)) return prev;
-            return [...prev, msg].slice(-MAX_MESSAGES);
+            setTotalMessages(t => t + 1);
+            return [...prev, msg];
         });
         if (saveToDb) {
             await saveMessageToDB(msg);
         }
     }, [saveMessageToDB]);
 
-    // Load last 7 days of messages from Supabase DB
-    const loadHistory = useCallback(async () => {
+    // Fetch absolute total count from DB
+    const fetchTotalCount = useCallback(async () => {
+        try {
+            const { count } = await supabase
+                .from('gc_messages')
+                .select('*', { count: 'exact', head: true });
+            if (count !== null) setTotalMessages(count);
+        } catch (e) {
+            console.warn('GC count fetch failed:', e);
+        }
+    }, []);
+
+    // Load messages from Supabase DB with pagination
+    const loadHistory = useCallback(async (beforeTimestamp?: string) => {
+        if (!hasMore && beforeTimestamp) return;
         setIsLoadingHistory(true);
         try {
-            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-            const { data, error: dbError } = await supabase
+            let query = supabase
                 .from('gc_messages')
                 .select('*')
-                .gte('created_at', sevenDaysAgo)
                 .order('created_at', { ascending: false })
-                .limit(200);
+                .limit(PAGE_SIZE);
+
+            if (beforeTimestamp) {
+                query = query.lt('created_at', beforeTimestamp);
+            }
+
+            const { data, error: dbError } = await query;
 
             if (dbError) {
                 console.warn('GC history load failed:', dbError.message);
@@ -132,33 +153,53 @@ export const useGCLobby = (playerName: string | null) => {
             }
 
             if (data && data.length > 0) {
-                const historyMessages: GCMessage[] = data.reverse().map(row => ({
+                const historyMessages: GCMessage[] = data.map(row => ({
                     id: row.id,
                     senderId: row.sender_id,
                     senderName: row.sender_name,
                     text: row.text,
                     timestamp: new Date(row.created_at).getTime(),
                     type: row.sender_id === 'system' ? 'system' as const : 'chat' as const,
-                }));
+                })).reverse();
 
                 historyMessages.forEach(m => loadedFromDB.current.add(m.id));
 
+                // Track oldest timestamp for next page
+                const oldest = data[data.length - 1].created_at;
+                if (!oldestTimestampRef.current || oldest < oldestTimestampRef.current) {
+                    oldestTimestampRef.current = oldest;
+                }
+
+                if (data.length < PAGE_SIZE) {
+                    setHasMore(false);
+                }
+
                 setMessages(prev => {
                     const combined = [...historyMessages, ...prev];
+
                     const seen = new Set<string>();
-                    return combined.filter(m => {
+                    const unique = combined.filter(m => {
                         if (seen.has(m.id)) return false;
                         seen.add(m.id);
                         return true;
-                    }).slice(-MAX_MESSAGES);
+                    });
+
+                    return unique;
                 });
+            } else {
+                setHasMore(false);
             }
         } catch (e) {
             console.warn('GC history load error:', e);
         } finally {
             setIsLoadingHistory(false);
         }
-    }, []);
+    }, [hasMore]);
+
+    const loadMoreHistory = useCallback(async () => {
+        if (isLoadingHistory || !hasMore || !oldestTimestampRef.current) return;
+        await loadHistory(oldestTimestampRef.current);
+    }, [isLoadingHistory, hasMore, loadHistory]);
 
 
     const join = useCallback(async () => {
@@ -167,6 +208,7 @@ export const useGCLobby = (playerName: string | null) => {
         setError(null);
 
         await loadHistory();
+        await fetchTotalCount();
 
         let myIp = 'unknown';
         try {
@@ -243,7 +285,10 @@ export const useGCLobby = (playerName: string | null) => {
                     type: 'chat',
                     isAdmin: payload.isAdmin,
                 };
-                setMessages(prev => [...prev, msg].slice(-MAX_MESSAGES));
+                setMessages(prev => {
+                    setTotalMessages(t => t + 1);
+                    return [...prev, msg];
+                });
             }
 
             if (payload.type === 'challenge') {
@@ -260,7 +305,10 @@ export const useGCLobby = (playerName: string | null) => {
                         timestamp: payload.timestamp || Date.now(),
                         type: 'system',
                     };
-                    setMessages(prev => [...prev, msg].slice(-MAX_MESSAGES));
+                    setMessages(prev => {
+                        setTotalMessages(t => t + 1);
+                        return [...prev, msg];
+                    });
                 }
 
                 if (payload.to === myId.current) {
@@ -287,7 +335,10 @@ export const useGCLobby = (playerName: string | null) => {
                         timestamp: payload.timestamp || Date.now(),
                         type: 'system',
                     };
-                    setMessages(prev => [...prev, msg].slice(-MAX_MESSAGES));
+                    setMessages(prev => {
+                        setTotalMessages(t => t + 1);
+                        return [...prev, msg];
+                    });
                 }
 
                 if (payload.to === myId.current) {
@@ -309,7 +360,10 @@ export const useGCLobby = (playerName: string | null) => {
                         timestamp: payload.timestamp || Date.now(),
                         type: 'system',
                     };
-                    setMessages(prev => [...prev, msg].slice(-MAX_MESSAGES));
+                    setMessages(prev => {
+                        setTotalMessages(t => t + 1);
+                        return [...prev, msg];
+                    });
                 }
                 // Clear the pending challenge on the receiver side
                 if (payload.to === myId.current) {
@@ -331,7 +385,10 @@ export const useGCLobby = (playerName: string | null) => {
                         timestamp: payload.timestamp || Date.now(),
                         type: 'system',
                     };
-                    setMessages(prev => [...prev, msg].slice(-MAX_MESSAGES));
+                    setMessages(prev => {
+                        setTotalMessages(t => t + 1);
+                        return [...prev, msg];
+                    });
                 }
 
                 if (payload.to === myId.current) {
@@ -381,6 +438,8 @@ export const useGCLobby = (playerName: string | null) => {
         setChallengeAccepted(null);
         setChallengeDeclined(null);
         loadedFromDB.current.clear();
+        oldestTimestampRef.current = null;
+        setHasMore(true);
     }, []);
 
     const leaveSilently = useCallback(() => {
@@ -415,7 +474,10 @@ export const useGCLobby = (playerName: string | null) => {
             isAdmin,
         };
 
-        setMessages(prev => [...prev, msg].slice(-MAX_MESSAGES));
+        setMessages(prev => {
+            setTotalMessages(t => t + 1);
+            return [...prev, msg];
+        });
         channelRef.current.send({
             type: 'broadcast',
             event: 'gc',
@@ -649,6 +711,12 @@ export const useGCLobby = (playerName: string | null) => {
     }, [pendingChallenge]);
 
     useEffect(() => {
+        if (!isConnected) return;
+        const interval = setInterval(fetchTotalCount, 60000); // Re-sync every minute
+        return () => clearInterval(interval);
+    }, [isConnected, fetchTotalCount]);
+
+    useEffect(() => {
         return () => {
             if (!suppressCleanupRef.current && channelRef.current) {
                 channelRef.current.untrack();
@@ -663,6 +731,8 @@ export const useGCLobby = (playerName: string | null) => {
         isLoadingHistory,
         onlineUsers,
         messages,
+        totalMessages,
+        hasMore,
         pendingChallenge,
         challengeAccepted,
         challengeDeclined,
@@ -673,6 +743,7 @@ export const useGCLobby = (playerName: string | null) => {
         leave,
         leaveSilently,
         sendMessage,
+        loadMoreHistory,
         sendChallenge,
         acceptChallenge,
         declineChallenge,

@@ -71,6 +71,8 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
         isLoadingHistory,
         onlineUsers,
         messages,
+        totalMessages,
+        hasMore,
         pendingChallenge,
         challengeAccepted,
         challengeDeclined,
@@ -86,6 +88,7 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
         leave,
         leaveSilently,
         sendMessage,
+        loadMoreHistory,
         sendChallenge,
         acceptChallenge,
         declineChallenge,
@@ -104,6 +107,12 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
     const challengeTargetNameRef = useRef<string | null>(null);
     const challengeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
+    const lastScrollHeightRef = useRef<number>(0);
+    const isFirstLoadRef = useRef(true);
+    const isPrependingRef = useRef(false);
+    const prevOldestMessageId = useRef<string | null>(null);
 
     const handleSetName = (e: React.FormEvent) => {
         e.preventDefault();
@@ -116,9 +125,65 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
         join();
     }, [join]);
 
+    // Handle Infinite Scroll Observer
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+        if (!hasMore || isLoadingHistory) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                // Record state before prepending
+                if (scrollContainerRef.current) {
+                    lastScrollHeightRef.current = scrollContainerRef.current.scrollHeight;
+                }
+                loadMoreHistory();
+            }
+        }, { threshold: 0.1 });
+
+        if (loadMoreSentinelRef.current) {
+            observer.observe(loadMoreSentinelRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [hasMore, isLoadingHistory, loadMoreHistory]);
+
+    // Intelligent Scroll Management
+    useEffect(() => {
+        if (!scrollContainerRef.current || messages.length === 0) return;
+
+        const oldestId = messages[0].id;
+        const container = scrollContainerRef.current;
+
+        // Detection: Did we just fetch older messages?
+        if (prevOldestMessageId.current && oldestId !== prevOldestMessageId.current) {
+            isPrependingRef.current = true;
+        } else {
+            isPrependingRef.current = false;
+        }
+        prevOldestMessageId.current = oldestId;
+
+        if (isFirstLoadRef.current) {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+            isFirstLoadRef.current = false;
+            return;
+        }
+
+        if (isPrependingRef.current) {
+            // Restore scroll position after prepending
+            const newScrollHeight = container.scrollHeight;
+            const heightDiff = newScrollHeight - lastScrollHeightRef.current;
+            container.scrollTop = container.scrollTop + heightDiff;
+            isPrependingRef.current = false;
+        } else {
+            // Auto-scroll to bottom only if user is already near bottom or it's my message
+            const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+            const lastMsg = messages[messages.length - 1];
+            const isMyMessage = lastMsg?.senderId === myId;
+
+            if (isAtBottom || isMyMessage) {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    }, [messages, myId]);
 
     useEffect(() => {
         if (error) toast.error(error);
@@ -423,13 +488,22 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
                     </div>
 
                     {/* Messages */}
-                    <div className={`flex-1 overflow-y-auto p-3 space-y-2 ${activeTab === 'users' ? 'hidden sm:block' : ''}`}>
-                        {isLoadingHistory && (
-                            <div className="flex items-center justify-center gap-2 py-3 opacity-50">
-                                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                                <span className="text-[10px] font-mono text-muted-foreground">Loading chat history...</span>
+                    <div
+                        ref={scrollContainerRef}
+                        className={`flex-1 overflow-y-auto p-3 space-y-2 ${activeTab === 'users' ? 'hidden sm:block' : ''}`}
+                    >
+                        {/* Load More Sentinel */}
+                        {hasMore && (
+                            <div ref={loadMoreSentinelRef} className="h-4 w-full flex items-center justify-center">
+                                {isLoadingHistory && (
+                                    <div className="flex items-center gap-2 opacity-50">
+                                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                                        <span className="text-[9px] font-mono text-muted-foreground">fetching more...</span>
+                                    </div>
+                                )}
                             </div>
                         )}
+
                         {!isLoadingHistory && messages.length === 0 && (
                             <div className="flex flex-col items-center justify-center h-full text-center gap-3 opacity-40">
                                 <MessageSquare className="h-10 w-10 text-muted-foreground" />
@@ -581,8 +655,8 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
 
             {/* Admin Password Entry */}
             {showAdminEntry && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-card border-2 border-border p-6 rounded-xl shadow-2xl max-w-sm w-full space-y-4 animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-card border border-border p-6 rounded-xl shadow-2xl max-w-sm w-full space-y-4 animate-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-red-500">
                                 <Lock className="h-5 w-5" />
@@ -625,9 +699,9 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
 
             {/* Admin Dashboard */}
             {showAdminDashboard && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-card/95 border border-red-500/20 w-full max-w-4xl h-[80vh] rounded-xl shadow-[0_0_50px_rgba(239,68,68,0.1)] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300">
-                        <div className="p-4 border-b border-border flex items-center justify-between bg-zinc-950/50">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/90 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-card border border-border w-full max-w-4xl h-[80vh] rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300">
+                        <div className="p-4 border-b border-border flex items-center justify-between bg-secondary/30">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-red-500/10 rounded-lg">
                                     <Activity className="h-5 w-5 text-red-500" />
@@ -665,7 +739,7 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                                     {onlineUsers.map(user => (
-                                        <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-zinc-950/40 border border-white/5 group hover:border-red-500/20 transition-all">
+                                        <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/20 border border-border/50 group hover:border-red-500/40 transition-all">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-2 h-2 rounded-full ${user.status === 'idle' ? 'bg-green-500' : 'bg-red-500'} shadow-[0_0_8px_currentColor]`} />
                                                 <div>
@@ -683,17 +757,17 @@ const GCLobby = ({ playerName, onJoin, onResetName, onExit, onJoinVsFromGC, onCr
                             </div>
 
                             {/* System Status */}
-                            <div className="w-64 bg-zinc-950/20 p-4 space-y-6">
+                            <div className="w-64 bg-secondary/10 p-4 space-y-6">
                                 <div>
                                     <h4 className="text-[10px] font-mono font-bold text-muted-foreground mb-3 uppercase tracking-widest">Global Stats</h4>
                                     <div className="space-y-3">
-                                        <div className="p-3 rounded bg-zinc-950/50 border border-white/5">
+                                        <div className="p-3 rounded bg-background border border-border/50 shadow-sm">
                                             <p className="text-[9px] font-mono text-muted-foreground uppercase">Online Players</p>
                                             <p className="text-xl font-mono font-bold text-red-500">{onlineUsers.length}</p>
                                         </div>
-                                        <div className="p-3 rounded bg-zinc-950/50 border border-white/5">
-                                            <p className="text-[9px] font-mono text-muted-foreground uppercase">Messages Today</p>
-                                            <p className="text-xl font-mono font-bold text-red-500">{messages.length}</p>
+                                        <div className="p-3 rounded bg-background border border-border/50 shadow-sm">
+                                            <p className="text-[9px] font-mono text-muted-foreground uppercase">Total Messages</p>
+                                            <p className="text-xl font-mono font-bold text-red-500">{totalMessages}</p>
                                         </div>
                                     </div>
                                 </div>
