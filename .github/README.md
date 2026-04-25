@@ -31,7 +31,6 @@ powershell -c "irm iamovi.github.io/KeysAndFingers/Install.ps1 | iex"
 
   ---
 
-  ![windows](./windows-preview.png)
 
   **released under [MIT](./LICENSE) License,**
 
