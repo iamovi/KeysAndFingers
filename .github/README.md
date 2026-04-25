@@ -31,26 +31,6 @@ powershell -c "irm iamovi.github.io/KeysAndFingers/Install.ps1 | iex"
 
   ---
 
-  ```md
-  ## features ##
-
-  i. real-time vs mode Room system with live sync.
-
-  ii. advanced theme engine with google fonts and glassmorphism.
-
-  iii. automated waifu rewards with skeleton loading screens.
-
-  iv. battle intro gif with tactical briefing panels.
-
-  v. performance tracking with analytics and heatmaps.
-
-  vi. multiple difficulty levels and custom text support.
-
-  vii. mobile optimized interface and sound effects.
-  ```
-
-  ---
-
   ![windows](./windows-preview.png)
 
   **released under [MIT](./LICENSE) License,**
